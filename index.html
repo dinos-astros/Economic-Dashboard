@@ -39,7 +39,7 @@
   @media (min-width: 1000px) { .watch3 { grid-template-columns: 1fr 1fr 1fr; } }
   .watch3 > .card > svg { max-width: 100%; height: auto; }
   @media (min-width: 1500px) { .real4 { grid-template-columns: repeat(4, 1fr); } }
-  @media (min-width: 1500px) { .watch3 { grid-template-columns: 1fr 1fr 1.7fr 1fr; } }
+  @media (min-width: 1500px) { .watch3 { grid-template-columns: 1fr 1fr 1.7fr 1fr 1fr; } }
   @media (min-width: 900px) { .tile.wide { grid-column: span 2; grid-row: span 2; } }
   .card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
   .card .note { font-size: 12.5px; color: #000; margin: 2px 0 8px; }
@@ -543,7 +543,17 @@
     html += '<div class="card" style="padding:12px 16px"><h3 style="margin:0 0 2px">Real GDP growth</h3>' +
       '<div style="display:flex;gap:28px;margin-top:8px;flex-wrap:wrap"><div><div class="note" style="margin:0">' + qLabel(glat.d) + ' <b style="font-size:18px;color:' + (glat.v < 0 ? '#c0392b' : '#1a7f4b') + '">' + signed(glat.v, 1) + '%</b></div></div>' +
       '<div><div class="note" style="margin:0">Quarters of decline in a row: <b style="color:' + gcol + '">' + gcount + '</b></div><svg width="' + (gw3 + 20) + '" height="38" viewBox="-10 0 ' + (gw3 + 20) + ' 38"><rect x="0" y="8" width="' + gx3(1) + '" height="8" fill="#d4ebdc"/><rect x="' + gx3(1) + '" y="8" width="' + (gw3 - gx3(1)) + '" height="8" fill="#f3d3cf"/><line x1="' + gw3 + '" y1="4" x2="' + gw3 + '" y2="20" stroke="#1c2430" stroke-width="2"/><circle cx="' + gx3(Math.min(2, gcount)) + '" cy="12" r="5.5" fill="' + gcol + '" stroke="#fff" stroke-width="2"/><text x="' + gw3 + '" y="33" font-size="10" fill="#6b7686" text-anchor="middle">2</text><text x="0" y="33" font-size="10" fill="#6b7686" text-anchor="middle">0</text></svg></div></div></div>';
-  }  html += '</div>';
+  }
+  var cbxW = manual('Conference Board Expectations Index');
+  if (cbxW) {
+    var xp = cbxW.points.filter(function (p) { return p.v !== null; }), xl = xp[xp.length - 1], xpv = xp[xp.length - 2], xlo = 50, xhi = 100, xw = 300, xg = function (v) { return Math.max(0, Math.min(xw, (v - xlo) / (xhi - xlo) * xw)); }, xbad = xl.v < 80;
+    html += '<div class="card"><h3>Conference Board Consumer Expectations Index</h3><div class="gauge-num ' + (xbad ? 'down' : 'up') + '">' + fmt(xl.v, 1) + '</div>' +
+      '<svg width="' + (xw + 20) + '" height="52" viewBox="-10 0 ' + (xw + 20) + ' 52"><rect x="0" y="16" width="' + xg(80) + '" height="10" fill="#f3d3cf"/><rect x="' + xg(80) + '" y="16" width="' + (xw - xg(80)) + '" height="10" fill="#d4ebdc"/>' +
+      '<line x1="' + xg(80) + '" y1="10" x2="' + xg(80) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + xg(xl.v) + '" cy="21" r="7" fill="' + (xbad ? '#c0392b' : '#1a7f4b') + '" stroke="#fff" stroke-width="2"/>' +
+      '<text x="0" y="46" font-size="11" fill="#000">50</text><text x="' + xg(80) + '" y="46" font-size="11" fill="#000" text-anchor="middle">80 (the warning line)</text><text x="' + xw + '" y="46" font-size="11" fill="#000" text-anchor="end">100</text></svg>' +
+      '<div class="note" style="margin-top:4px">' + monthLabel(xl.d).replace('-', ' 20') + (xpv ? ' · ' + monthLabel(xpv.d).replace('-', ' 20') + ': ' + fmt(xpv.v, 1) : '') + '</div></div>';
+  }
+  html += '</div>';
 
   /* ---------- Energy activity ---------- */
   section('rigs', TITLES.rigs, '');
@@ -636,8 +646,6 @@
   html += blsCard('cpi');
   var pce = manual('Personal consumption expenditures (billions of dollars, annual rate)'); if (pce) html += specCard('pce', pce.points.map(function (p) { return { d: p.d, v: p.v }; }));
   var rt = mseries('retail'); if (rt) html += specCard('retail', rt.points, 'Census publishes retail sales about six weeks late.');
-  var cbx = manual('Conference Board Expectations Index');
-  if (cbx) { var cxp = cbx.points.filter(function (p) { return p.v !== null; }).slice(-12); html += card('Conference Board Expectations Index', '', lineChart(cxp.map(function (p) { return monthLabel(p.d); }), [{ vals: cxp.map(function (p) { return p.v; }), color: '#d9822b' }], { dec: 0, ref: 80, leftTitle: 'Expectations Index' }), legend([['#d9822b', 'Expectations Index', 'marker'], ['#1c2430', 'Recession warning line, 80', 'dash']])); }
   var gdp = manual('Real GDP growth, quarterly annual rate');
   if (gdp) { var gA = arr(gdp.points), gl = gA.labels.map(qLabel), gn = gA.vals.length - 1; html += card('Real GDP growth, quarterly', '', barLine(gl, gA.vals, null, { barDec: 1, lineDec: 1, leftTitle: 'Growth, % annual rate' })); }
   html += '</div>';
