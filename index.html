@@ -186,6 +186,20 @@
     ser.forEach(function (s, k) { s.vals.forEach(function (v, i) { if (v === null) return; var x0 = L + i * step + (step - gw) / 2 + k * bw, y0 = y(0), y1 = y(v), flat = Math.abs(v) < 0.5; out += '<rect x="' + x0.toFixed(1) + '" y="' + (flat ? y0 - 1 : Math.min(y0, y1)).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (flat ? 2 : Math.max(1, Math.abs(y1 - y0))).toFixed(1) + '" fill="' + s.color + '"/>'; }); });
     if (o.leftTitle) out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text>';
     return out + xLabels(labels, W, L, step, 1, H - 170) + '</svg>';
+  }  /* jobs created: bars per month (total, construction, professional and business) on the primary axis, a line (job openings) on the secondary axis, equal ticks on both */
+  function jobsCombo(labels, ser, line, o) {
+    var W = 520, H = 235, L = 62, R = 58, T = 12, B = 40, pw = W - L - R, ph = H - T - B, n = labels.length, step = pw / n, i, v, yy, bv = [];
+    ser.forEach(function (s) { s.vals.forEach(function (x) { if (x !== null) bv.push(x); }); });
+    var ap = axisPair(bv, line.vals, true), y1 = function (x) { return T + (ap.hi - x) / (ap.hi - ap.lo) * ph; }, y2 = function (x) { return T + (ap.rhi - x) / (ap.rhi - ap.rlo) * ph; }, out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
+    for (i = 0; i < ap.k; i++) { v = ap.lo + i * ap.step; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#000" text-anchor="end">' + fmt(v, ap.ld) + '</text>'; }
+    for (i = 0; i < ap.k; i++) { v = ap.rlo + i * ap.rstep; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<text x="' + (W - R + 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#000">' + fmt(v, ap.rd) + '</text>'; }
+    var gw = step * 0.8, bw = gw / ser.length, y0 = y1(0);
+    ser.forEach(function (s, k) { s.vals.forEach(function (x, m) { if (x === null) return; var yb = y1(x), flat = Math.abs(x) < 0.5; out += '<rect x="' + (L + m * step + (step - gw) / 2 + k * bw).toFixed(1) + '" y="' + (flat ? y0 - 1 : Math.min(y0, yb)).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (flat ? 2 : Math.max(1, Math.abs(yb - y0))).toFixed(1) + '" fill="' + s.color + '"/>'; }); });
+    var pts = [], dots = ''; line.vals.forEach(function (x, m) { if (x !== null) { var px = (L + m * step + step / 2).toFixed(1), py = y2(x).toFixed(1); pts.push(px + ',' + py); dots += '<circle cx="' + px + '" cy="' + py + '" r="3" fill="' + line.color + '"/>'; } });
+    if (pts.length > 1) out += '<polyline fill="none" stroke="' + line.color + '" stroke-width="2" points="' + pts.join(' ') + '"/>' + dots;
+    out += xLabels(labels, W, L, step, 1, H - 170);
+    out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text><text transform="rotate(90 ' + (W - 8) + ' ' + (T + ph / 2) + ')" x="' + (W - 8) + '" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.rightTitle) + '</text></svg>';
+    return out;
   }  function lineChart(labels, lines, o) {
     var W = o.compact ? 270 : 520, H = o.h || 170, L = o.compact ? 42 : 56, R = o.compact ? 12 : 56, T = 12, B = 30, pw = W - L - R, ph = H - T - B;
     var all = []; lines.forEach(function (ln) { all = all.concat(ln.vals); });
@@ -585,18 +599,13 @@
   html += '<div class="grid charts">';
   function blsCard(id) { var b = bseries(id); if (!b && id === 'cpi') { var mc = manual('CPI-U, all items, seasonally adjusted (index)'); if (mc) return specCard('cpi', mc.points.map(function (p) { return { d: p.d, v: p.v }; }), 'Source: FRED, until the BLS feed answers.'); } return b ? specCard(id, b.points) : pendingCard(SPEC[id].t, 'Not loaded on the last run. BLS allows 25 requests a day without a key, and the daily job tries again.'); }
   var jobsPts = function (id) { var b = bseries(id); if (!b) return null; var pts = withHistory(id, b.points); if (window.TAIL && TAIL[id] && pts.length) TAIL[id].forEach(function (p) { if (p.d > pts[pts.length - 1].d) pts = pts.concat([p]); }); return pts; };
-  var payP = jobsPts('payrolls'), jolP = jobsPts('jolts');
-  if (payP && jolP) {
-    var pm = {}, jm = {}; payP.forEach(function (p) { pm[p.d] = p.v; }); jolP.forEach(function (p) { jm[p.d] = p.v; });
-    var jmonths = payP.map(function (p) { return p.d; }).slice(-12), jv = function (m) { return jmonths.map(function (d) { return (m[d] === undefined || m[d] === null) ? null : m[d]; }); };
-    var pAll = payP.map(function (p) { return p.d; }), pChg = jmonths.map(function (d) { var k = pAll.indexOf(d); return (k > 0 && pm[d] !== null && pm[d] !== undefined && pm[pAll[k - 1]] !== null && pm[pAll[k - 1]] !== undefined) ? pm[d] - pm[pAll[k - 1]] : null; });
-    html += monthsCard({ t: 'Nonfarm payrolls and job openings' }, jmonths, jv(jm), { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, bars: pChg, leftTitle: 'Job openings, thousands', rightTitle: 'Change in nonfarm payrolls, thousands', lineLabel: 'Job openings', barLabel: 'Change in nonfarm payrolls' });
-  } else { html += blsCard('payrolls') + blsCard('jolts'); }
-  var bcJC = manual('All employees, construction (thousands)'), bcJM = manual('All employees, manufacturing (thousands)'), bcC = manual('Job openings, construction (thousands)'), bcM = manual('Job openings, manufacturing (thousands)'), bcJ = (bcJC && bcJM) ? { points: bcJC.points.map(function (p) { var q = bcJM.points.filter(function (x) { return x.d === p.d; })[0]; return { d: p.d, v: (q && q.v !== null && p.v !== null) ? p.v + q.v : null }; }) } : null;
-  if (bcJ && bcC && bcM) {
-    var bj = {}, bc = {}, bm = {}; bcJ.points.forEach(function (p) { bj[p.d] = p.v; }); bcC.points.forEach(function (p) { bc[p.d] = p.v; }); bcM.points.forEach(function (p) { bm[p.d] = p.v; });
-    var bMonths = bcJ.points.map(function (p) { return p.d; }).slice(-12), bOpen = bMonths.map(function (d) { return (bc[d] === undefined || bm[d] === undefined || bc[d] === null || bm[d] === null) ? null : bc[d] + bm[d]; });
-    html += card('Blue-collar jobs and job openings', '', twoAxisLines(bMonths.map(monthLabel), [{ vals: bMonths.map(function (d) { return bj[d] === undefined ? null : bj[d]; }), color: '#1a3a7a' }], { vals: bOpen, color: '#d9822b' }, { leftTitle: 'Jobs, thousands', rightTitle: 'Openings, thousands' }), legend([['#1a3a7a', 'Construction and manufacturing jobs (left axis)', 'line'], ['#d9822b', 'Construction and manufacturing openings (right axis)', 'line']]));
+  /* Jobs created each month in construction (blue collar) and professional and business services (white collar), BLS payrolls */
+  var jcC = manual('All employees, construction (thousands)'), jcP = manual('All employees, professional and business services (thousands)');
+  if (jcC && jcP) {
+    var jcm = {}, jpm = {}; jcC.points.forEach(function (p) { jcm[p.d] = p.v; }); jcP.points.forEach(function (p) { jpm[p.d] = p.v; });
+    var jcAll = jcC.points.filter(function (p) { return p.v !== null; }).map(function (p) { return p.d; }), jcMonths = jcAll.slice(-12);
+    var jcChg = function (m) { return jcMonths.map(function (d) { var y = +d.slice(0, 4), mo = +d.slice(5, 7), pk = (mo === 1 ? (y - 1) + '-12' : y + '-' + (mo - 1 < 10 ? '0' : '') + (mo - 1)); return (m[d] != null && m[pk] != null) ? m[d] - m[pk] : null; }); };
+    html += card('Jobs created: construction and professional and business services', '', groupedBars(jcMonths.map(monthLabel), [{ vals: jcChg(jcm), color: '#1a3a7a' }, { vals: jcChg(jpm), color: '#d9822b' }], { leftTitle: 'Jobs created, thousands' }), legend([['#1a3a7a', 'Construction (blue collar)'], ['#d9822b', 'Professional and business services (white collar)']]));
   }
   var ic = manual('Initial jobless claims (weekly)'), i4 = manual('Initial jobless claims, 4-week average');
   var hou = manual('Houston unemployment rate (seasonally adjusted)');
