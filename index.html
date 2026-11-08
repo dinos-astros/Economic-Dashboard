@@ -384,6 +384,7 @@
     if (o.lastYear) { /* calendar layout: January to December, this year against last year */
       var yr0 = parseInt(String(raw[last]).slice(0, 4), 10), mm, pd, k1, k0; lv = []; mb = []; yl = []; ly = []; lab = [];
       for (mm = 1; mm <= 12; mm++) { pd = (mm < 10 ? '0' : '') + mm; k1 = raw.indexOf(yr0 + '-' + pd); k0 = raw.indexOf((yr0 - 1) + '-' + pd); lv.push(k1 >= 0 ? vals[k1] : null); mb.push(k1 >= 0 ? mo[k1] : null); yl.push(null); ly.push(k0 >= 0 ? vals[k0] : null); lab.push(monthLabel(yr0 + '-' + pd)); }
+      if (ly.filter(function (x) { return x !== null; }).length < 9) ly = ly.map(function () { return null; }); /* a partial last-year line is misleading, so it shows only when most of the year is there (CPI has no October 2025, the shutdown) */
     }
     var step = pw / lv.length, ap = axisPair(lv.concat(ly.filter(function (x) { return x !== null; })), mb.concat(yl), o.leftZero, o.fixedAxes), bw0 = 0;
     var y1 = function (v) { return T + (ap.hi - v) / (ap.hi - ap.lo) * ph; }, y2 = function (v) { return T + (ap.rhi - v) / (ap.rhi - ap.rlo) * ph; };    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">', i, v, yy;
