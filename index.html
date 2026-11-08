@@ -599,6 +599,13 @@
   html += '<div class="grid charts">';
   function blsCard(id) { var b = bseries(id); if (!b && id === 'cpi') { var mc = manual('CPI-U, all items, seasonally adjusted (index)'); if (mc) return specCard('cpi', mc.points.map(function (p) { return { d: p.d, v: p.v }; }), 'Source: FRED, until the BLS feed answers.'); } return b ? specCard(id, b.points) : pendingCard(SPEC[id].t, 'Not loaded on the last run. BLS allows 25 requests a day without a key, and the daily job tries again.'); }
   var jobsPts = function (id) { var b = bseries(id); if (!b) return null; var pts = withHistory(id, b.points); if (window.TAIL && TAIL[id] && pts.length) TAIL[id].forEach(function (p) { if (p.d > pts[pts.length - 1].d) pts = pts.concat([p]); }); return pts; };
+  var payP = jobsPts('payrolls'), jolP = jobsPts('jolts');
+  if (payP && jolP) {
+    var pm = {}, jm = {}; payP.forEach(function (p) { pm[p.d] = p.v; }); jolP.forEach(function (p) { jm[p.d] = p.v; });
+    var jmonths = payP.map(function (p) { return p.d; }).slice(-12), jv = function (m) { return jmonths.map(function (d) { return (m[d] === undefined || m[d] === null) ? null : m[d]; }); };
+    var pAll = payP.map(function (p) { return p.d; }), pChg = jmonths.map(function (d) { var k = pAll.indexOf(d); return (k > 0 && pm[d] !== null && pm[d] !== undefined && pm[pAll[k - 1]] !== null && pm[pAll[k - 1]] !== undefined) ? pm[d] - pm[pAll[k - 1]] : null; });
+    html += monthsCard({ t: 'Nonfarm payrolls and job openings' }, jmonths, jv(jm), { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, bars: pChg, leftTitle: 'Job openings, thousands', rightTitle: 'Change in nonfarm payrolls, thousands', lineLabel: 'Job openings', barLabel: 'Change in nonfarm payrolls' });
+  } else { html += blsCard('payrolls') + blsCard('jolts'); }
   /* Jobs created each month in construction (blue collar) and professional and business services (white collar), BLS payrolls */
   var jcC = manual('All employees, construction (thousands)'), jcP = manual('All employees, professional and business services (thousands)');
   if (jcC && jcP) {
