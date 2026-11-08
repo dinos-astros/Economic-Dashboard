@@ -546,7 +546,7 @@
   }
   var cbxW = manual('Conference Board Expectations Index');
   if (cbxW) {
-    var xp = cbxW.points.filter(function (p) { return p.v !== null; }), xl = xp[xp.length - 1], xpv = xp[xp.length - 2], xlo = 50, xhi = 100, xw = 300, xg = function (v) { return Math.max(0, Math.min(xw, (v - xlo) / (xhi - xlo) * xw)); }, xbad = xl.v < 80;
+    var xp = cbxW.points.filter(function (p) { return p.v !== null; }), xl = xp[xp.length - 1], xpv = xp[xp.length - 2], xlo = 50, xhi = 100, xw = 225, xg = function (v) { return Math.max(0, Math.min(xw, (v - xlo) / (xhi - xlo) * xw)); }, xbad = xl.v < 80;
     html += '<div class="card"><h3>Conference Board Consumer Expectations Index</h3><div class="gauge-num ' + (xbad ? 'down' : 'up') + '">' + fmt(xl.v, 1) + '</div>' +
       '<svg width="' + (xw + 20) + '" height="52" viewBox="-10 0 ' + (xw + 20) + ' 52"><rect x="0" y="16" width="' + xg(80) + '" height="10" fill="#f3d3cf"/><rect x="' + xg(80) + '" y="16" width="' + (xw - xg(80)) + '" height="10" fill="#d4ebdc"/>' +
       '<line x1="' + xg(80) + '" y1="10" x2="' + xg(80) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + xg(xl.v) + '" cy="21" r="7" fill="' + (xbad ? '#c0392b' : '#1a7f4b') + '" stroke="#fff" stroke-width="2"/>' +
