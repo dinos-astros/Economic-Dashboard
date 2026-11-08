@@ -636,6 +636,8 @@
   html += blsCard('cpi');
   var pce = manual('Personal consumption expenditures (billions of dollars, annual rate)'); if (pce) html += specCard('pce', pce.points.map(function (p) { return { d: p.d, v: p.v }; }));
   var rt = mseries('retail'); if (rt) html += specCard('retail', rt.points, 'Census publishes retail sales about six weeks late.');
+  var cbx = manual('Conference Board Expectations Index');
+  if (cbx) { var cxp = cbx.points.filter(function (p) { return p.v !== null; }).slice(-12); html += card('Conference Board Expectations Index', '', lineChart(cxp.map(function (p) { return monthLabel(p.d); }), [{ vals: cxp.map(function (p) { return p.v; }), color: '#d9822b' }], { dec: 0, ref: 80, leftTitle: 'Expectations Index' }), legend([['#d9822b', 'Expectations Index', 'marker'], ['#1c2430', 'Recession warning line, 80', 'dash']])); }
   var gdp = manual('Real GDP growth, quarterly annual rate');
   if (gdp) { var gA = arr(gdp.points), gl = gA.labels.map(qLabel), gn = gA.vals.length - 1; html += card('Real GDP growth, quarterly', '', barLine(gl, gA.vals, null, { barDec: 1, lineDec: 1, leftTitle: 'Growth, % annual rate' })); }
   html += '</div>';
