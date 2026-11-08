@@ -607,12 +607,12 @@
     html += monthsCard({ t: 'Nonfarm payrolls and job openings' }, jmonths, jv(jm), { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, bars: pChg, leftTitle: 'Job openings, thousands', rightTitle: 'Change in nonfarm payrolls, thousands', lineLabel: 'Job openings', barLabel: 'Change in nonfarm payrolls' });
   } else { html += blsCard('payrolls') + blsCard('jolts'); }
   /* Jobs created each month in construction (blue collar) and professional and business services (white collar), BLS payrolls */
-  var jcC = manual('All employees, construction (thousands)'), jcP = manual('All employees, professional and business services (thousands)');
+  var jcC = manual('All employees, construction (thousands)'), jcMf = manual('All employees, manufacturing (thousands)'), jcMn = manual('All employees, mining and logging (thousands)'), jcP = manual('All employees, professional and business services (thousands)');
   if (jcC && jcP) {
-    var jcm = {}, jpm = {}; jcC.points.forEach(function (p) { jcm[p.d] = p.v; }); jcP.points.forEach(function (p) { jpm[p.d] = p.v; });
+    var jcm = {}, jmf = {}, jmn = {}, jpm = {}; jcC.points.forEach(function (p) { jcm[p.d] = p.v; }); jcMf.points.forEach(function (p) { jmf[p.d] = p.v; }); jcMn.points.forEach(function (p) { jmn[p.d] = p.v; }); jcP.points.forEach(function (p) { jpm[p.d] = p.v; });
     var jcAll = jcC.points.filter(function (p) { return p.v !== null; }).map(function (p) { return p.d; }), jcMonths = jcAll.slice(-12);
     var jcChg = function (m) { return jcMonths.map(function (d) { var y = +d.slice(0, 4), mo = +d.slice(5, 7), pk = (mo === 1 ? (y - 1) + '-12' : y + '-' + (mo - 1 < 10 ? '0' : '') + (mo - 1)); return (m[d] != null && m[pk] != null) ? m[d] - m[pk] : null; }); };
-    html += card('Jobs created: construction and professional and business services', '', groupedBars(jcMonths.map(monthLabel), [{ vals: jcChg(jcm), color: '#1a3a7a' }, { vals: jcChg(jpm), color: '#d9822b' }], { leftTitle: 'Jobs created, thousands' }), legend([['#1a3a7a', 'Construction (blue collar)'], ['#d9822b', 'Professional and business services (white collar)']]));
+    html += card('Jobs created: blue collar and white collar', '', groupedBars(jcMonths.map(monthLabel), [{ vals: jcChg(jcm).map(function (v, i) { var w = jcChg(jmf)[i], x = jcChg(jmn)[i]; return (v === null || w === null || x === null) ? null : v + w + x; }), color: '#1a3a7a' }, { vals: jcChg(jpm), color: '#d9822b' }], { leftTitle: 'Jobs created, thousands' }), legend([['#1a3a7a', 'Construction, manufacturing and mining (blue collar)'], ['#d9822b', 'Professional and business services (white collar)']]));
   }
   var ic = manual('Initial jobless claims (weekly)'), i4 = manual('Initial jobless claims, 4-week average');
   var hou = manual('Houston unemployment rate (seasonally adjusted)');
