@@ -551,7 +551,7 @@
       '<svg width="' + (xw + 20) + '" height="52" viewBox="-10 0 ' + (xw + 20) + ' 52"><rect x="0" y="16" width="' + xg(80) + '" height="10" fill="#f3d3cf"/><rect x="' + xg(80) + '" y="16" width="' + (xw - xg(80)) + '" height="10" fill="#d4ebdc"/>' +
       '<line x1="' + xg(80) + '" y1="10" x2="' + xg(80) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + xg(xl.v) + '" cy="21" r="7" fill="' + (xbad ? '#c0392b' : '#1a7f4b') + '" stroke="#fff" stroke-width="2"/>' +
       '<text x="0" y="46" font-size="11" fill="#000">50</text><text x="' + xg(80) + '" y="46" font-size="11" fill="#000" text-anchor="middle">80 (the warning line)</text><text x="' + xw + '" y="46" font-size="11" fill="#000" text-anchor="end">100</text></svg>' +
-      '<div class="note" style="margin-top:4px">' + monthLabel(xl.d).replace('-', ' 20') + (xpv ? ' · ' + monthLabel(xpv.d).replace('-', ' 20') + ': ' + fmt(xpv.v, 1) : '') + '</div></div>';
+      '<div class="note" style="margin-top:4px">' + monthLabel(xl.d).replace('-', ' 20') + (xpv ? ' · Last month ' + fmt(xpv.v, 1) : '') + '</div></div>';
   }
   html += '</div>';
 
