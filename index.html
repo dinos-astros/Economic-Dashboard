@@ -381,6 +381,10 @@
     var dk = o.kind === 'diff' ? 'diff' : 'pct', mo = o.bars || vals.map(function (v, i) { if (v === null) return null; var k = i - 1; while (k >= 0 && vals[k] === null) k--; return k >= 0 ? (dk === 'pct' ? (v / vals[k] - 1) * 100 : v - vals[k]) : null; }), yo = o.noYoy ? vals.map(function () { return null; }) : change(vals, 12, dk);
     var lv = [], mb = [], yl = [], ly = [], lab = [], j;
     for (j = from; j <= last; j++) { lv.push(vals[j]); mb.push(mo[j]); yl.push(yo[j]); ly.push(o.lastYear && j - 12 >= 0 ? vals[j - 12] : null); lab.push(monthLabel(raw[j])); }
+    if (o.lastYear) { /* calendar layout: January to December, this year against last year */
+      var yr0 = parseInt(String(raw[last]).slice(0, 4), 10), mm, pd, k1, k0; lv = []; mb = []; yl = []; ly = []; lab = [];
+      for (mm = 1; mm <= 12; mm++) { pd = (mm < 10 ? '0' : '') + mm; k1 = raw.indexOf(yr0 + '-' + pd); k0 = raw.indexOf((yr0 - 1) + '-' + pd); lv.push(k1 >= 0 ? vals[k1] : null); mb.push(k1 >= 0 ? mo[k1] : null); yl.push(null); ly.push(k0 >= 0 ? vals[k0] : null); lab.push(monthLabel(yr0 + '-' + pd)); }
+    }
     var step = pw / lv.length, ap = axisPair(lv.concat(ly.filter(function (x) { return x !== null; })), mb.concat(yl), o.leftZero, o.fixedAxes), bw0 = 0;
     var y1 = function (v) { return T + (ap.hi - v) / (ap.hi - ap.lo) * ph; }, y2 = function (v) { return T + (ap.rhi - v) / (ap.rhi - ap.rlo) * ph; };    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">', i, v, yy;
     for (i = 0; i < ap.k; i++) { v = ap.lo + i * ap.step; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(v, ap.ld) + (o.leftUnit || '') + '</text>'; }    var bw = step * 0.5;
@@ -435,7 +439,7 @@
     } else { txt += ' Change from last month: ' + sp.m(bars[last], absM) + '. Change from last year: ' + sp.y(line[last], absY) + '.'; }
     sp.barDec = sp.bd; sp.lineDec = sp.ld;
     var LD = { payrolls: 0, unrate: 1, jolts: 0, cpi: 2, houston: 1, michigan: 1, retail: 0, pce: 0 };
-    if (id === 'michigan' || id === 'cpi' || id === 'pce' || id === 'retail') return monthsCard(sp, A.labels, vals, { levelDec: LD[id], noYoy: true, lastYear: true, lineLabel: ({ michigan: 'Michigan sentiment', cpi: 'CPI', pce: 'PCE', retail: 'Retail sales' })[id], barLabel: ({ michigan: 'Michigan sentiment MoM %', cpi: 'CPI MoM %', pce: 'PCE MoM %', retail: 'Retail sales MoM %' })[id], leftTitle: ({ michigan: 'Index', cpi: 'Price index', pce: 'Dollars, billions', retail: 'Dollars, millions' })[id], rightTitle: 'Change, %' });
+    if (id === 'michigan' || id === 'cpi' || id === 'pce' || id === 'retail') return monthsCard(sp, A.labels, vals, { levelDec: LD[id], noYoy: true, lastYear: true, lineLabel: ({ michigan: 'Michigan sentiment', cpi: 'CPI', pce: 'PCE', retail: 'Retail sales' })[id], barLabel: 'MoM %', leftTitle: ({ michigan: 'Index', cpi: 'Price index', pce: 'Dollars, billions', retail: 'Dollars, millions' })[id], rightTitle: 'Change, %' });
     if (id === 'jolts') return monthsCard(sp, A.labels, vals, { levelDec: 0, noBars: true, noYoy: true, leftTitle: 'Openings, thousands', rightTitle: 'Change, %' });
     if (id === 'unrate' || id === 'houston') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, leftUnit: '%', rightUnit: '%', leftZero: true, noYoy: true, noBars: true, leftTitle: 'Unemployment rate, %', rightTitle: 'Change, %' });
     if (id === 'goods') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Number of jobs, thousands', rightTitle: 'Change in jobs, thousands' });
@@ -561,7 +565,7 @@
   [['Baker Hughes rig count, United States', 'United States'], ['Baker Hughes rig count, Canada', 'Canada']].forEach(function (pair) {
     var g = manual(pair[0]); if (!g) return;
     var rA = arr(g.points), rv = rA.vals, n = rv.length - 1, wow = rv.map(function (v, i) { return i === 0 ? null : (v - rv[i - 1]) / rv[i - 1] * 100; }), ch = rv[n] - rv[n - 1], pc = ch / rv[n - 1] * 100;
-    html += weeklyCard(pair[1] + ': rigs this week ' + rv[n], rA.labels.map(dayLabel), rv, wow, { leftTitle: 'Total rigs', rightTitle: '% change WoW', barLabel: 'Rig count WoW %' });
+    html += weeklyCard(pair[1] + ': rigs this week ' + rv[n], rA.labels.map(dayLabel), rv, wow, { leftTitle: 'Total rigs', rightTitle: '% change WoW', barLabel: 'WoW %' });
   });
   var rigsGridOpen = true;
 
@@ -642,7 +646,7 @@
   html += '<div class="grid charts">';
   var mi = mseries('michigan'); if (mi) html += specCard('michigan', mi.points);
   var cb = manual('Conference Board Consumer Confidence');
-  if (cb) { var cbA = arr(cb.points), cbl2 = cbA.labels.map(monthLabel), cbn = cbA.vals.length - 1, cbd = cbA.vals[cbn] - cbA.vals[cbn - 1]; html += monthsCard({ t: 'Conference Board Consumer Confidence' }, cbA.labels, cbA.vals, { levelDec: 1, noYoy: true, lineLabel: 'Consumer confidence', barLabel: 'Consumer confidence MoM %', leftTitle: 'Index', rightTitle: 'Change, %' }); }
+  if (cb) { var cbA = arr(cb.points), cbl2 = cbA.labels.map(monthLabel), cbn = cbA.vals.length - 1, cbd = cbA.vals[cbn] - cbA.vals[cbn - 1]; html += monthsCard({ t: 'Conference Board Consumer Confidence' }, cbA.labels, cbA.vals, { levelDec: 1, noYoy: true, lastYear: true, barLabel: 'MoM %', leftTitle: 'Index', rightTitle: 'Change, %' }); }
   html += blsCard('cpi');
   var pce = manual('Personal consumption expenditures (billions of dollars, annual rate)'); if (pce) html += specCard('pce', pce.points.map(function (p) { return { d: p.d, v: p.v }; }));
   var rt = mseries('retail'); if (rt) html += specCard('retail', rt.points, 'Census publishes retail sales about six weeks late.');
