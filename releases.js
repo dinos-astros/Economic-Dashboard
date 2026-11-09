@@ -16,10 +16,10 @@ window.RELEASES = [
   { date: "2026-11-25", at: "07:30", ok: true,  name: "PCE (personal spending)", src: "BEA", url: "https://www.bea.gov/data/income-saving/personal-income" },
   { date: "2026-11-25", at: "07:30", ok: true,  name: "GDP (second estimate)", src: "BEA", url: "https://www.bea.gov/data/gdp/gross-domestic-product" },
   { date: "2026-12-01", at: "08:45", ok: true,  name: "S&P Global US Manufacturing PMI", src: "S&P Global", url: "https://www.pmi.spglobal.com/Public/Release/PressReleases" },
-  { date: "2026-12-01", at: "09:00", ok: true,  name: "ISM Manufacturing PMI", src: "ISM", url: "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/" },
+  { date: "2026-12-01", at: "09:00", ok: true,  name: "ISM Manufacturing PMI", src: "ISM", url: "https://www.prnewswire.com/news/institute-for-supply-management/" },
   { date: "2026-12-01", at: "09:00", ok: true,  name: "JOLTS job openings", src: "BLS", url: "https://www.bls.gov/news.release/jolts.htm" },
   { date: "2026-12-03", at: "08:45", ok: true,  name: "S&P Global US Services PMI", src: "S&P Global", url: "https://www.pmi.spglobal.com/Public/Release/PressReleases" },
-  { date: "2026-12-03", at: "09:00", ok: true,  name: "ISM Services PMI", src: "ISM", url: "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/" },
+  { date: "2026-12-03", at: "09:00", ok: true,  name: "ISM Services PMI", src: "ISM", url: "https://www.prnewswire.com/news/institute-for-supply-management/" },
   { date: "2026-12-04", at: "07:30", ok: true,  name: "Jobs report (payrolls, unemployment)", src: "BLS", url: "https://www.bls.gov/news.release/empsit.nr0.htm" },
   { date: "2026-12-09", at: "13:00", ok: true,  name: "Fed rate decision (FOMC, Dec 8-9)", src: "Federal Reserve", url: "https://www.federalreserve.gov/newsevents/pressreleases.htm" }
 ];

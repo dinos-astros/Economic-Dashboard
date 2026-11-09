@@ -134,6 +134,17 @@
   }
   function xLabels(labels, W, L, step, every, dy) { dy = dy || 0;
     var out = '';
+    /* monthly labels sit on the calendar: every month up to 14 points, every third month (Jan, Apr, Jul, Oct) up to 30, otherwise Jan and Jul; the year goes under the first label and under each January */
+    if (labels.length && labels.every(function (l) { return /^[A-Z][a-z]{2}-\d\d$/.test(String(l)); })) {
+      var S = labels.length <= 14 ? 1 : labels.length <= 30 ? 3 : 6;
+      labels.forEach(function (lb, i) {
+        var p = String(lb).split('-'), mi = MON.indexOf(p[0]) + 1, x = (L + i * step + step / 2).toFixed(1);
+        if (S > 1 && (mi - 1) % S !== 0) return;
+        out += '<text x="' + x + '" y="' + (152 + dy) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + esc(p[0]) + '</text>';
+        if (i === 0 || mi === 1) out += '<text x="' + x + '" y="' + (164 + dy) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">20' + p[1] + '</text>';
+      });
+      return out;
+    }
     labels.forEach(function (lb, i) {
       var last = labels.length - 1; if (!((i % every === 0 && last - i >= every / 2) || i === last)) return;
       var p = String(lb).split('-'), x = (L + i * step + step / 2).toFixed(1);
@@ -147,7 +158,7 @@
   function symAxis(vals) { var m = Math.max.apply(null, vals.filter(function (v) { return v !== null; }).map(Math.abs)) * 1.1 || 1; return { min: -m, max: m }; }
   /* bars on the left scale, optional line on the right scale */
   function barLine(labels, bars, line, o) {
-    var W = 520, H = 170, L = 52, R = 52, T = 12, B = 30, pw = W - L - R, ph = H - T - B;
+    var W = 520, H = 221, L = 52, R = 52, T = 12, B = 30, pw = W - L - R, ph = H - T - B;
     var hasLine = line && line.some(function (v) { return v !== null; }); var a = o.signColors ? symAxis(bars) : axis(o.sameAxis && hasLine ? bars.concat(line) : bars);
     var b = hasLine && !o.sameAxis ? axis(line) : { min: 0, max: 1 };
     var yb = function (v) { return T + (a.max - v) / (a.max - a.min) * ph; };
@@ -156,7 +167,7 @@
     for (var i = 0; i <= 4; i++) {
       var va = a.min + (a.max - a.min) * i / 4, vb = b.min + (b.max - b.min) * i / 4, yy = yb(va);
       out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/>' +
-        '<text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(va, o.barDec) + '</text>' +
+        '<text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(va, o.barDec) + (o.barUnit || '') + '</text>' +
         (hasLine && !o.sameAxis ? '<text x="' + (W - R + 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#d9822b">' + fmt(vb, o.lineDec) + '</text>' : '');
     }
     out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yb(0) + '" y2="' + yb(0) + '" stroke="#9aa5b5"/>';
@@ -275,7 +286,7 @@
     var per = /weekly/i.test(t.window || '') ? ' WoW' : ''; if (isRate) { chg = arrow + ' ' + signed(d, 2) + ' points (' + signed(Math.round(d * 100), 0) + '\u00a0bps)' + per; }
     else { var pct = t.prev ? d / t.prev * 100 : 0, dol = t.unit === '$' ? '$' : ''; chg = arrow + ' ' + (d > 0 ? '+' : d < 0 ? '-' : '') + dol + fmt(Math.abs(d), t.decimals) + ' (' + signed(pct, 2) + '%)' + per; }
     var val = (t.unit === '$' ? '$' : '') + fmt(t.value, t.decimals) + (isRate ? '%' : '');
-    return '<div class="card tile" title="' + esc(t.note || '') + ' Source: ' + esc(t.source) + '"><div class="label">' + esc(t.label) + '</div><div class="value">' + val + '</div><div class="chg ' + cls + '">' + chg + '</div>' + spark(t.spark) + (t.range ? rangeBar(t) : '') + '<div class="asof">' + (t.window ? 'Line: ' + esc(t.window) + '<br>' : '') + 'Updated ' + dateLabel(t.asOf) + '</div></div>';
+    return '<div class="card tile" title="' + esc(t.note || '') + ' Source: ' + esc(t.source) + '"><div class="label">' + esc(t.label) + '</div><div class="value">' + val + '</div><div class="chg ' + cls + '">' + chg + '</div>' + spark(t.spark) + (t.range ? rangeBar(t) : '') + '<div class="asof">' + (t.window ? 'Line: ' + esc(t.window) + '<br>' : '') + 'Updated ' + dateLabel(t.asOf) + (t.asOfTime ? ' ' + esc(t.asOfTime) + ' Central' : '') + '</div></div>';
   }
   function tileById(id) { return DATA.tiles.filter(function (t) { return t.id === id; })[0]; }
   function ercotTile() {
@@ -394,6 +405,54 @@
     out += line(yl, y2, '#1a3a7a', 2, true, false) + line(ly, y1, '#a9b1bd', 3, false, true) + line(lv, y1, '#d9822b', 3, false, true);
     lab.forEach(function (lb, m) { var p = lb.split('-'), x = (L + m * step + step / 2).toFixed(1); out += '<text x="' + x + '" y="' + (H - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + esc(p[0]) + '</text>'; if (!o.lastYear && (m === 0 || p[0] === 'Jan')) out += '<text x="' + x + '" y="' + (H - 2) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">20' + p[1] + '</text>'; });
     if (o.leftTitle) out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text>'; if (o.rightTitle && !o.noBars) out += '<text transform="rotate(90 ' + (W - 8) + ' ' + (T + ph / 2) + ')" x="' + (W - 8) + '" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.rightTitle) + '</text>'; var hasYoy = yl.filter(function (x) { return x !== null; }).length > 1, hasLy = ly.filter(function (x) { return x !== null; }).length > 1; return card(sp.t, '', out + '</svg>', legend([['#d9822b', (o.lastYear ? String(raw[last]).slice(0, 4) : (o.lineLabel || 'Actual')), 'marker']].concat(hasYoy ? [['#1a3a7a', 'Change from last year' + (dk === 'pct' ? ', %' : ''), 'dash']] : [], hasLy ? [['#a9b1bd', String(parseInt(String(raw[last]).slice(0, 4), 10) - 1), 'marker']] : [], (o.noBars ? [] : [['#1a3a7a', (o.barLabel || 'Change from last month' + (dk === 'pct' ? ', %' : ''))]]))));
+  }  /* rig counts as in the MAD report: one group per month, January to December, last year (light grey) beside this year (orange), the count written on each bar. cur and prev are 12 monthly averages, null where there is none yet. */
+  function rigMonthlyCard(title, cur, prev, o) {
+    var W = 520, H = 200, L = 52, R = (o.wti ? 58 : 16), T = 12, B = 40, pw = W - L - R, ph = H - T - B, i, v, yy;
+    var all = cur.concat(prev).filter(function (x) { return x !== null; }), top = Math.max.apply(null, all) * 1.18, steps = [10, 20, 25, 50, 100, 200], step = 10;
+    for (i = 0; i < steps.length; i++) { step = steps[i]; if (top / step <= 6) break; }
+    var hi = Math.ceil(top / step) * step, k = hi / step, gw = pw / 12, bw = gw * 0.36, wmax = o.wti ? Math.max.apply(null, o.wti.filter(function (x) { return x !== null; })) * 1.05 : 0, rst = [10, 20, 25, 50, 100], rstep = 10; if (o.wti) { for (i = 0; i < rst.length; i++) { rstep = rst[i]; if (rstep * k >= wmax) break; } }
+    var yw = function (x) { return T + (1 - x / (rstep * k)) * ph; };
+    var y = function (x) { return T + (hi - x) / hi * ph; };
+    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
+    for (i = 0; i <= k; i++) { v = i * step; yy = y(v); out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + v + '</text>'; }
+    var bar = function (m, side, val, color) { if (val === null) return ''; var x0 = L + m * gw + gw / 2 + (side === 0 ? -bw - 0.5 : 0.5), yt = y(val); return '<rect x="' + x0.toFixed(1) + '" y="' + yt.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, y(0) - yt).toFixed(1) + '" fill="' + color + '"/><text transform="rotate(-90 ' + (x0 + bw / 2 + 3.5).toFixed(1) + ' ' + (yt - 3).toFixed(1) + ')" x="' + (x0 + bw / 2 + 3.5).toFixed(1) + '" y="' + (yt - 3).toFixed(1) + '" font-size="9.5" font-weight="700" fill="' + (color === '#d9822b' ? '#a85f12' : '#6b7686') + '">' + Math.round(val) + '</text>'; };
+    for (i = 0; i < 12; i++) out += bar(i, 0, prev[i], '#a9b1bd') + bar(i, 1, cur[i], '#d9822b');
+    if (o.wti) { for (i = 0; i <= k; i++) out += '<text x="' + (W - R + 6) + '" y="' + (y(i * step) + 4) + '" font-size="10.5" fill="#1a3a7a">' + (i * rstep) + '</text>'; var wp = [], wd = ''; o.wti.forEach(function (x, m) { if (x !== null) { var px = (L + m * gw + gw / 2).toFixed(1), py = yw(x).toFixed(1); wp.push(px + ',' + py); wd += '<circle cx="' + px + '" cy="' + py + '" r="3.5" fill="#1a3a7a"/>'; } }); out += '<polyline fill="none" stroke="#1a3a7a" stroke-width="3" points="' + wp.join(' ') + '"/>' + wd + '<text transform="rotate(90 ' + (W - 8) + ' ' + (T + ph / 2) + ')" x="' + (W - 8) + '" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.wtiTitle) + '</text>'; }
+    for (i = 0; i < 12; i++) out += '<text x="' + (L + i * gw + gw / 2).toFixed(1) + '" y="' + (H - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + MON[i] + '</text>';
+    out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text></svg>';
+    return card(title, '', out, legend([['#d9822b', String(o.year)], ['#a9b1bd', String(o.year - 1)]].concat(o.wti ? [['#1a3a7a', 'WTI $/bbl', 'marker']] : [])));
+  }  /* weekly rig counts as lines, January to December: this year (orange) against last year (light grey). The scale does not start at zero, so the weekly movement shows. cur and prev are [{doy, v}]. */
+  function rigWeeklyCard(title, cur, prev, o) {
+    var W = 520, H = 200, L = 52, R = 16, T = 12, B = 40, pw = W - L - R, ph = H - T - B, i, v, yy;
+    var all = cur.concat(prev).map(function (a) { return a.v; }), mn = Math.min.apply(null, all), mx = Math.max.apply(null, all), steps = [5, 10, 20, 25, 50, 100], step = 5;
+    for (i = 0; i < steps.length; i++) { step = steps[i]; if ((mx - mn) / step <= 5) break; }
+    var lo = Math.floor(mn / step) * step, hi = Math.ceil(mx / step) * step; if (hi === lo) hi = lo + step;
+    var X = function (doy) { return L + (doy - 0.5) / 365 * pw; }, y = function (x) { return T + (hi - x) / (hi - lo) * ph; };
+    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
+    for (v = lo; v <= hi + 0.001; v += step) { yy = y(v); out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + v + '</text>'; }
+    var poly = function (a, color, w) { return '<polyline fill="none" stroke="' + color + '" stroke-width="' + w + '" points="' + a.map(function (p) { return X(p.doy).toFixed(1) + ',' + y(p.v).toFixed(1); }).join(' ') + '"/>'; };
+    out += poly(prev, '#a9b1bd', 2.5) + poly(cur, '#d9822b', 3);
+    [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349].forEach(function (d, m) { out += '<text x="' + X(d).toFixed(1) + '" y="' + (H - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + MON[m] + '</text>'; });
+    out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text></svg>';
+    return card(title, '', out, legend([['#d9822b', String(o.year), 'line'], ['#a9b1bd', String(o.year - 1), 'line']]));
+  }  /* weekly counts, January to December: this year (orange) against last year (grey), the weekly % change as bars on the right axis. cur and prev are [{doy, v}], bars is [{doy, v}] for this year only. */
+  function weeklyYearCard(title, cur, prev, bars, o) {
+    var W = 520, H = 200, L = 68, R = 58, T = 12, B = 40, pw = W - L - R, ph = H - T - B, i, v, yy;
+    var pick = function (a) { return a.v; };
+    var ap = axisPair(cur.map(pick).concat(prev.map(pick)), bars.map(pick));
+    var X = function (doy) { return L + (doy - 0.5) / 365 * pw; };
+    var y1 = function (x) { return T + (ap.hi - x) / (ap.hi - ap.lo) * ph; }, y2 = function (x) { return T + (ap.rhi - x) / (ap.rhi - ap.rlo) * ph; };
+    var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
+    for (i = 0; i < ap.k; i++) { v = ap.lo + i * ap.step; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(v, ap.ld) + '</text>'; }
+    var bw = Math.max(1.5, pw / 52 * 0.6);
+    bars.forEach(function (b) { var y0 = y2(0), yb = y2(b.v); out += '<rect x="' + (X(b.doy) - bw / 2).toFixed(1) + '" y="' + Math.min(y0, yb).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, Math.abs(yb - y0)).toFixed(1) + '" fill="#1a3a7a"/>'; });
+    for (i = 0; i < ap.k; i++) { v = ap.rlo + i * ap.rstep; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<text x="' + (W - R + 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#1a3a7a">' + fmt(v, ap.rd) + (o.rightUnit || '') + '</text>'; }
+    var poly = function (a, color, w) { return '<polyline fill="none" stroke="' + color + '" stroke-width="' + w + '" points="' + a.map(function (p) { return X(p.doy).toFixed(1) + ',' + y1(p.v).toFixed(1); }).join(' ') + '"/>'; };
+    out += poly(prev, '#a9b1bd', 2.5) + poly(cur, '#d9822b', 3);
+    var mid = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
+    mid.forEach(function (d, m) { out += '<text x="' + X(d).toFixed(1) + '" y="' + (H - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + MON[m] + '</text>'; });
+    out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text><text transform="rotate(90 ' + (W - 8) + ' ' + (T + ph / 2) + ')" x="' + (W - 8) + '" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.rightTitle) + '</text></svg>';
+    return card(title, '', out, legend([['#d9822b', String(o.year), 'line'], ['#a9b1bd', String(o.year - 1), 'line'], ['#1a3a7a', o.barLabel]]));
   }  /* weekly version of the same layout: total on the left axis as an orange line, the change from last week as navy bars on the right axis, equal ticks on both */
   function weeklyCard(title, labels, lineVals, barVals, o) {
     var W = 520, H = 200, L = 68, R = 58, T = 12, B = 40, pw = W - L - R, ph = H - T - B, n = labels.length, step = pw / n, i, v, yy;
@@ -403,13 +462,13 @@
     for (i = 0; i < ap.k; i++) { v = ap.lo + i * ap.step; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(v, ap.ld) + '</text>'; }
     var bw = Math.max(1.5, step * 0.6);
     barVals.forEach(function (x, m) { if (x === null || x === 0) return; var y0 = y2(0), yb = y2(x); out += '<rect x="' + (L + m * step + (step - bw) / 2).toFixed(1) + '" y="' + Math.min(y0, yb).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, Math.abs(yb - y0)).toFixed(1) + '" fill="#1a3a7a"/>'; });
-    for (i = 0; i < ap.k; i++) { v = ap.rlo + i * ap.rstep; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<text x="' + (W - R + 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#1a3a7a">' + fmt(v, ap.rd) + '</text>'; }
+    for (i = 0; i < ap.k; i++) { v = ap.rlo + i * ap.rstep; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<text x="' + (W - R + 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#1a3a7a">' + fmt(v, ap.rd) + (o.rightUnit || '') + '</text>'; }
     var pts = []; lineVals.forEach(function (x, m) { if (x !== null) pts.push((L + m * step + step / 2).toFixed(1) + ',' + y1(x).toFixed(1)); });
     out += '<polyline fill="none" stroke="#d9822b" stroke-width="2.5" points="' + pts.join(' ') + '"/>';
     var every = Math.max(1, Math.round(n / 7));
     labels.forEach(function (lb, m) { if ((n - 1 - m) % every === 0) out += '<text x="' + (L + m * step + step / 2).toFixed(1) + '" y="' + (H - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + esc(lb) + '</text>'; });
     out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text><text transform="rotate(90 ' + (W - 8) + ' ' + (T + ph / 2) + ')" x="' + (W - 8) + '" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.rightTitle) + '</text></svg>';
-    return card(title, '', out, legend([['#d9822b', o.leftTitle, 'line'], ['#1a3a7a', o.barLabel || o.rightTitle]]));
+    return card(title, '', out, legend([['#d9822b', o.lineLabel || o.leftTitle, 'line'], ['#1a3a7a', o.barLabel || o.rightTitle]]));
   }  /* several lines on the left axis and one line on the right axis, with the same number of ticks on both */
   function twoAxisLines(labels, leftLines, rightLine, o) {
     var W = 520, H = 170, L = 68, R = 58, T = 12, B = 30, pw = W - L - R, ph = H - T - B, n = labels.length, step = pw / n, i, v, yy;
@@ -417,7 +476,7 @@
     var ap = axisPair(lv, rightLine.vals, o.leftZero);
     var y1 = function (x) { return T + (ap.hi - x) / (ap.hi - ap.lo) * ph; }, y2 = function (x) { return T + (ap.rhi - x) / (ap.rhi - ap.rlo) * ph; };
     var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
-    for (i = 0; i < ap.k; i++) { v = ap.lo + i * ap.step; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(v, ap.ld) + '</text>'; }
+    for (i = 0; i < ap.k; i++) { v = ap.lo + i * ap.step; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#eef0f4"/><text x="' + (L - 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + fmt(v, ap.ld) + (o.leftUnit || '') + '</text>'; }
     for (i = 0; i < ap.k; i++) { v = ap.rlo + i * ap.rstep; yy = T + (ap.k - 1 - i) / (ap.k - 1) * ph; out += '<text x="' + (W - R + 6) + '" y="' + (yy + 4) + '" font-size="10.5" fill="#6b7686">' + fmt(v, ap.rd) + '</text>'; }
     var poly = function (vals, fy, color, w) { var pts = []; vals.forEach(function (x, m) { if (x !== null) pts.push((L + m * step + step / 2).toFixed(1) + ',' + fy(x).toFixed(1)); }); return pts.length > 1 ? '<polyline fill="none" stroke="' + color + '" stroke-width="' + w + '" points="' + pts.join(' ') + '"/>' : ''; };
     if (o.rightBars) { var rb = step * 0.5; rightLine.vals.forEach(function (x, m) { if (x === null) return; var yb = y2(Math.max(ap.rlo, 0)), yt = y2(x); out += '<rect x="' + (L + m * step + (step - rb) / 2).toFixed(1) + '" y="' + Math.min(yb, yt).toFixed(1) + '" width="' + rb.toFixed(1) + '" height="' + Math.max(1, Math.abs(yb - yt)).toFixed(1) + '" fill="' + rightLine.color + '"/>'; }); } else { out += poly(rightLine.vals, y2, rightLine.color, 2.5); }
@@ -440,17 +499,17 @@
     } else { txt += ' Change from last month: ' + sp.m(bars[last], absM) + '. Change from last year: ' + sp.y(line[last], absY) + '.'; }
     sp.barDec = sp.bd; sp.lineDec = sp.ld;
     var LD = { payrolls: 0, unrate: 1, jolts: 0, cpi: 2, houston: 1, michigan: 1, retail: 0, pce: 0 };
-    if (id === 'michigan' || id === 'cpi' || id === 'pce' || id === 'retail') return monthsCard(sp, A.labels, vals, { levelDec: LD[id], noYoy: true, lastYear: true, lineLabel: ({ michigan: 'Michigan sentiment', cpi: 'CPI', pce: 'PCE', retail: 'Retail sales' })[id], barLabel: 'MoM %', leftTitle: ({ michigan: 'Index', cpi: 'Price index', pce: 'Dollars, billions', retail: 'Dollars, millions' })[id], rightTitle: 'Change, %' });
-    if (id === 'jolts') return monthsCard(sp, A.labels, vals, { levelDec: 0, noBars: true, noYoy: true, leftTitle: 'Openings, thousands', rightTitle: 'Change, %' });
-    if (id === 'unrate' || id === 'houston') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, leftUnit: '%', rightUnit: '%', leftZero: true, noYoy: true, noBars: true, leftTitle: 'Unemployment rate, %', rightTitle: 'Change, %' });
-    if (id === 'goods') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Number of jobs, thousands', rightTitle: 'Change in jobs, thousands' });
-    if (id === 'hcmedian') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Median price, dollars', rightTitle: 'Change, dollars' });
-    if (id === 'hcinv') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, noYoy: true, leftTitle: 'Months of supply', rightTitle: 'Change, months' });
-    if (id === 'hmedian') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Median price, dollars', rightTitle: 'Change, dollars' });
-    if (id === 'hinv') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, noYoy: true, leftTitle: 'Months of supply', rightTitle: 'Change, months' });
-    if (id === 'fulltime' || id === 'parttime') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Number of workers, thousands', rightTitle: 'Change in workers, thousands' });
-    if (id === 'payrolls') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, noBars: true, leftTitle: 'Number of jobs, thousands', rightTitle: 'Change in jobs, thousands' });
-    return yearBandCard(sp, A.labels, vals, bars, { levelDec: LD[id] === undefined ? 0 : LD[id], barDec: sp.bd, noBars: sp.bk === 'level', leftTitle: 'New housing units a month', changeLabel: sp.bk === 'pct' ? 'Change from last month, %' : 'Change from last month' });
+    if (id === 'michigan' || id === 'cpi' || id === 'pce' || id === 'retail') return monthsCard(sp, A.labels, vals, { levelDec: LD[id], noYoy: true, lastYear: true, lineLabel: ({ michigan: 'Michigan sentiment', cpi: 'CPI', pce: 'PCE', retail: 'Retail sales' })[id], barLabel: 'MoM %', leftTitle: ({ michigan: 'Index', cpi: 'Price index', pce: 'Dollars (billions)', retail: 'Dollars (millions)' })[id], rightTitle: 'Change' });
+    if (id === 'jolts') return monthsCard(sp, A.labels, vals, { levelDec: 0, noBars: true, noYoy: true, leftTitle: 'Openings (thousands)', rightTitle: 'Change' });
+    if (id === 'unrate' || id === 'houston') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, leftUnit: '%', rightUnit: '%', leftZero: true, noYoy: true, noBars: true, leftTitle: 'Unemployment rate', rightTitle: 'Change' });
+    if (id === 'goods') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Number of jobs (thousands)', rightTitle: 'Change in jobs (thousands)' });
+    if (id === 'hcmedian') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Median price (dollars)', rightTitle: 'Change (dollars)' });
+    if (id === 'hcinv') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, noYoy: true, leftTitle: 'Months of supply', rightTitle: 'Change (months)' });
+    if (id === 'hmedian') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Median price (dollars)', rightTitle: 'Change (dollars)' });
+    if (id === 'hinv') return monthsCard(sp, A.labels, vals, { levelDec: 1, kind: 'diff', barDec: 1, noYoy: true, leftTitle: 'Months of supply', rightTitle: 'Change (months)' });
+    if (id === 'fulltime' || id === 'parttime') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, leftTitle: 'Number of workers (thousands)', rightTitle: 'Change in workers (thousands)' });
+    if (id === 'payrolls') return monthsCard(sp, A.labels, vals, { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, noBars: true, leftTitle: 'Number of jobs (thousands)', rightTitle: 'Change in jobs (thousands)' });
+    return yearBandCard(sp, A.labels, vals, bars, { levelDec: LD[id] === undefined ? 0 : LD[id], barDec: sp.bd, noBars: sp.bk === 'level', leftTitle: 'Permits', changeLabel: sp.bk === 'pct' ? 'Change from last month, %' : 'Change from last month' });
   }
 
   /* Every section title lives here. Change a title once and the headings, the top bar and the Glossary groups all follow. */
@@ -540,7 +599,7 @@
       '<div style="display:flex;gap:9px;order:5;flex:0 0 100%">' + (function () { var W = 340, H = 118, x0 = 24, dx = (W - 2 * x0) / 6, lo = 96.6, hi = 100, y = function (v) { return 24 + (hi - v) / (hi - lo) * 66; }; var pts = six.map(function (p, i) { return (x0 + i * dx).toFixed(1) + ',' + y(p.v).toFixed(1); }).join(' '); var s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + '<line x1="0" y1="' + y(wl) + '" x2="' + W + '" y2="' + y(wl) + '" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5 3"/><text x="' + W + '" y="' + (y(wl) - 5) + '" font-size="13" font-weight="700" fill="#c0392b" text-anchor="end">' + nm2 + ' ' + fmt(wl, 1) + ' (from ' + nm + ')</text><polyline fill="none" stroke="#1a3a7a" stroke-width="2.5" points="' + pts + '"/>'; six.forEach(function (p, i) { var x = x0 + i * dx; s += '<circle cx="' + x + '" cy="' + y(p.v) + '" r="4" fill="#1a3a7a"/><text x="' + x + '" y="' + (y(p.v) - 9) + '" font-size="14" font-weight="650" fill="#1c2430" text-anchor="middle">' + fmt(p.v, 1) + '</text><text x="' + x + '" y="' + (H - 4) + '" font-size="11" fill="#6b7686" text-anchor="middle">' + monthLabel(p.d).split('-')[0] + '</text>'; }); return ''; })() + '</div></div>' +
       '<div class="src" style="margin-top:2px;font-size:11.5px">Updated monthly' + (lnext ? ', next ' + dateLabel(lnext.points[0].d) : '') + '.</div></div>';
   }
-  var gdpW = manual('Real GDP growth, quarterly annual rate');
+  var gdpW = manual('Real GDP growth (quarterly) annual rate');
   if (gdpW) {
     var gpts = gdpW.points.filter(function (p) { return p.v !== null; }), gcount = 0, gk = gpts.length - 1;
     while (gk >= 0 && gpts[gk].v < 0) { gcount++; gk--; }
@@ -563,10 +622,12 @@
   /* ---------- Energy activity ---------- */
   section('rigs', TITLES.rigs, '');
   html += '<div class="grid charts">';
+  var rigW = '';
   [['Baker Hughes rig count, United States', 'United States'], ['Baker Hughes rig count, Canada', 'Canada']].forEach(function (pair) {
     var g = manual(pair[0]); if (!g) return;
-    var rA = arr(g.points), rv = rA.vals, n = rv.length - 1, wow = rv.map(function (v, i) { return i === 0 ? null : (v - rv[i - 1]) / rv[i - 1] * 100; }), ch = rv[n] - rv[n - 1], pc = ch / rv[n - 1] * 100;
-    html += weeklyCard(pair[1] + ': rigs this week ' + rv[n], rA.labels.map(dayLabel), rv, wow, { leftTitle: 'Total rigs', rightTitle: '% change WoW', barLabel: 'WoW %' });
+    var rA = arr(g.points), yrNow = +rA.labels[rA.labels.length - 1].slice(0, 4), i0 = 0; while (i0 < rA.labels.length && +rA.labels[i0].slice(0, 4) !== yrNow) i0++;
+    var rl = rA.labels.slice(i0), rv = rA.vals.slice(i0), n = rv.length - 1, wow = rv.map(function (v, i) { return i === 0 ? null : (v - rv[i - 1]) / rv[i - 1] * 100; }), ch = rv[n] - rv[n - 1], pc = ch / rv[n - 1] * 100;
+    html += weeklyCard(pair[1] + ' ' + yrNow + ': rigs this week ' + rv[n], rl.map(dayLabel), rv, wow, { leftTitle: 'Rigs', lineLabel: 'Total rigs', rightTitle: '% change WoW', rightUnit: '%', barLabel: 'WoW %' });
   });
   var rigsGridOpen = true;
 
@@ -582,15 +643,15 @@
     var cLast = cur[cur.length - 1], cBk = Math.floor((cLast.doy - 1) / 7), cBand = band.filter(function (b) { return b.b === cBk; })[0] || band[band.length - 1];
     var allV = band.map(function (b) { return b.min; }).concat(band.map(function (b) { return b.max; }), cur.map(function (w) { return w.v; }));
     var lo = Math.floor(Math.min.apply(null, allV) / 20) * 20, hi = Math.ceil(Math.max.apply(null, allV) / 20) * 20;
-    var CW = 520, CH = 150, CL = 68, CR = 20, CT = 8, CB = 26, cpw = CW - CL - CR, cph = CH - CT - CB;
+    var CW = 520, CH = 200, CL = 68, CR = 20, CT = 12, CB = 40, cpw = CW - CL - CR, cph = CH - CT - CB;
     var cx = function (f) { return CL + f * cpw; }, cyy = function (v) { return CT + (hi - v) / (hi - lo) * cph; };
     var csv = '<svg width="100%" viewBox="0 0 ' + CW + ' ' + CH + '">';
     for (var gv = lo; gv <= hi; gv += 20) { csv += '<line x1="' + CL + '" x2="' + (CW - CR) + '" y1="' + cyy(gv) + '" y2="' + cyy(gv) + '" stroke="#eef0f4"/><text x="' + (CL - 6) + '" y="' + (cyy(gv) + 4) + '" font-size="10.5" fill="#6b7686" text-anchor="end">' + gv + '</text>'; }
     var poly = function (pts, stroke, w, dash) { return '<polyline fill="none" stroke="' + stroke + '" stroke-width="' + w + '"' + (dash ? ' stroke-dasharray="5 3"' : '') + ' points="' + pts.map(function (p) { return cx(p[0]).toFixed(1) + ',' + cyy(p[1]).toFixed(1); }).join(' ') + '"/>'; };
     csv += poly(band.map(function (b) { return [b.x, b.max]; }), '#9aa5b5', 1.6) + poly(band.map(function (b) { return [b.x, b.min]; }), '#9aa5b5', 1.6) + poly(band.map(function (b) { return [b.x, b.avg]; }), '#d9822b', 2, true) + poly(cur.map(function (w) { return [(w.doy - 0.5) / 365, w.v]; }), '#1a3a7a', 3);
-    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach(function (mn, i) { csv += '<text x="' + cx((i * 30.4 + 15) / 365).toFixed(1) + '" y="' + (CH - 10) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + mn + '</text>'; });
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach(function (mn, i) { csv += '<text x="' + cx((i * 30.4 + 15) / 365).toFixed(1) + '" y="' + (CH - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + mn + '</text>'; });
     csv += '<text transform="rotate(-90 10 ' + (CT + cph / 2) + ')" x="10" y="' + (CT + cph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">Million barrels</text></svg>';
-    html += '<div class="card"><h3>US crude oil stocks, million barrels</h3>' + csv + legend([['#1a3a7a', String(cy), 'line'], ['#d9822b', '5-year average', 'dash'], ['#9aa5b5', '5-year high and low', 'line']]) + '</div>';
+    html += '<div class="card"><h3>US crude oil stocks (million barrels)</h3>' + csv + legend([['#1a3a7a', String(cy), 'line'], ['#d9822b', '5-year average', 'dash'], ['#9aa5b5', '5-year high and low', 'line']]) + '</div>'; html += rigW;
   }
   html += '</div>';
 
@@ -619,7 +680,7 @@
     var pm = {}, jm = {}; payP.forEach(function (p) { pm[p.d] = p.v; }); jolP.forEach(function (p) { jm[p.d] = p.v; });
     var jmonths = payP.map(function (p) { return p.d; }).slice(-12), jv = function (m) { return jmonths.map(function (d) { return (m[d] === undefined || m[d] === null) ? null : m[d]; }); };
     var pAll = payP.map(function (p) { return p.d; }), pChg = jmonths.map(function (d) { var k = pAll.indexOf(d); return (k > 0 && pm[d] !== null && pm[d] !== undefined && pm[pAll[k - 1]] !== null && pm[pAll[k - 1]] !== undefined) ? pm[d] - pm[pAll[k - 1]] : null; });
-    html += monthsCard({ t: 'Nonfarm payrolls and job openings' }, jmonths, jv(jm), { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, bars: pChg, leftTitle: 'Job openings, thousands', rightTitle: 'Change in nonfarm payrolls, thousands', lineLabel: 'Volume of job openings (thousands)', barLabel: 'Nonfarm payrolls MoM units' });
+    html += monthsCard({ t: 'Nonfarm payrolls and job openings' }, jmonths, jv(jm), { levelDec: 0, kind: 'diff', barDec: 0, noYoy: true, bars: pChg, leftTitle: 'Job openings (thousands)', rightTitle: 'Change in nonfarm payrolls (thousands)', lineLabel: 'Volume of job openings (thousands)', barLabel: 'Nonfarm payrolls MoM units' });
   } else { html += blsCard('payrolls') + blsCard('jolts'); }
   /* Jobs created each month in construction (blue collar) and professional and business services (white collar), BLS payrolls */
   var jcC = manual('All employees, construction (thousands)'), jcMf = manual('All employees, manufacturing (thousands)'), jcMn = manual('All employees, mining and logging (thousands)'), jcP = manual('All employees, professional and business services (thousands)');
@@ -627,7 +688,7 @@
     var jcm = {}, jmf = {}, jmn = {}, jpm = {}; jcC.points.forEach(function (p) { jcm[p.d] = p.v; }); jcMf.points.forEach(function (p) { jmf[p.d] = p.v; }); jcMn.points.forEach(function (p) { jmn[p.d] = p.v; }); jcP.points.forEach(function (p) { jpm[p.d] = p.v; });
     var jcAll = jcC.points.filter(function (p) { return p.v !== null; }).map(function (p) { return p.d; }), jcMonths = jcAll.slice(-12);
     var jcChg = function (m) { return jcMonths.map(function (d) { var y = +d.slice(0, 4), mo = +d.slice(5, 7), pk = (mo === 1 ? (y - 1) + '-12' : y + '-' + (mo - 1 < 10 ? '0' : '') + (mo - 1)); return (m[d] != null && m[pk] != null) ? m[d] - m[pk] : null; }); };
-    html += card('Jobs created: blue collar and white collar', '', groupedBars(jcMonths.map(monthLabel), [{ vals: jcChg(jcm).map(function (v, i) { var w = jcChg(jmf)[i], x = jcChg(jmn)[i]; return (v === null || w === null || x === null) ? null : v + w + x; }), color: '#1a3a7a' }, { vals: jcChg(jpm), color: '#d9822b' }], { leftTitle: 'Jobs created, thousands' }), legend([['#1a3a7a', 'Blue collar MoM units (construction, manufacturing and mining)'], ['#d9822b', 'White collar MoM units (professional and business services)']]));
+    html += card('Jobs created: blue collar and white collar', '', groupedBars(jcMonths.map(monthLabel), [{ vals: jcChg(jcm).map(function (v, i) { var w = jcChg(jmf)[i], x = jcChg(jmn)[i]; return (v === null || w === null || x === null) ? null : v + w + x; }), color: '#1a3a7a' }, { vals: jcChg(jpm), color: '#d9822b' }], { leftTitle: 'Jobs created (thousands)' }), legend([['#1a3a7a', 'Blue collar MoM units (construction / manufacturing / mining)'], ['#d9822b', 'White collar MoM units (professional and business services)']]));
   }
   var ic = manual('Initial jobless claims (weekly)'), i4 = manual('Initial jobless claims, 4-week average');
   var hou = manual('Houston unemployment rate (seasonally adjusted)');
@@ -636,7 +697,7 @@
     var uN = {}, uH = {}, uC = {}, uCn = {}; natU.forEach(function (p) { uN[p.d] = p.v; }); hou.points.forEach(function (p) { uH[p.d] = p.v; });
     var uMonths = natU.map(function (p) { return p.d; }).slice(-12), uget = function (m) { return uMonths.map(function (d) { return (m[d] === undefined || m[d] === null) ? null : m[d]; }); };
     if (ic) { ic.points.forEach(function (p) { if (p.v === null) return; var mk = p.d.slice(0, 7); uC[mk] = (uC[mk] || 0) + p.v; uCn[mk] = (uCn[mk] || 0) + 1; }); Object.keys(uC).forEach(function (k) { uC[k] = Math.round(uC[k] / uCn[k]); }); }
-    html += card('Unemployment rate and jobless claims', '', twoAxisLines(uMonths.map(monthLabel), [{ vals: uget(uH), color: '#d9822b' }, { vals: uget(uN), color: '#1a3a7a' }], { vals: uget(uC), color: '#b9c5d6' }, { rightBars: true, leftZero: true, leftTitle: 'Unemployment rate, %', rightTitle: 'Initial claims a week' }), legend([['#d9822b', 'Houston unemployment rate', 'line'], ['#1a3a7a', 'National unemployment rate', 'line'], ['#b9c5d6', 'Initial jobless claims, monthly average (right axis)']]));
+    html += card('Unemployment rate and jobless claims', '', twoAxisLines(uMonths.map(monthLabel), [{ vals: uget(uH), color: '#d9822b' }, { vals: uget(uN), color: '#1a3a7a' }], { vals: uget(uC), color: '#b9c5d6' }, { rightBars: true, leftZero: true, leftUnit: '%', leftTitle: 'Unemployment rate', rightTitle: 'Claims' }), legend([['#d9822b', 'Houston unemployment rate', 'line'], ['#1a3a7a', 'National unemployment rate', 'line'], ['#b9c5d6', 'Initial jobless claims monthly average (right axis)']]));
   } else { if (hou) html += specCard('houston', hou.points.map(function (p) { return { d: p.d, v: p.v }; })); html += blsCard('unrate'); }
   html += '</div>';
 
@@ -647,12 +708,12 @@
   html += '<div class="grid charts">';
   var mi = mseries('michigan'); if (mi) html += specCard('michigan', mi.points);
   var cb = manual('Conference Board Consumer Confidence');
-  if (cb) { var cbA = arr(cb.points), cbl2 = cbA.labels.map(monthLabel), cbn = cbA.vals.length - 1, cbd = cbA.vals[cbn] - cbA.vals[cbn - 1]; html += monthsCard({ t: 'Conference Board Consumer Confidence' }, cbA.labels, cbA.vals, { levelDec: 1, noYoy: true, lastYear: true, barLabel: 'MoM %', leftTitle: 'Index', rightTitle: 'Change, %' }); }
+  if (cb) { var cbA = arr(cb.points), cbl2 = cbA.labels.map(monthLabel), cbn = cbA.vals.length - 1, cbd = cbA.vals[cbn] - cbA.vals[cbn - 1]; html += monthsCard({ t: 'Conference Board Consumer Confidence' }, cbA.labels, cbA.vals, { levelDec: 1, noYoy: true, lastYear: true, barLabel: 'MoM %', leftTitle: 'Index', rightTitle: 'Change' }); }
   html += blsCard('cpi');
   var pce = manual('Personal consumption expenditures (billions of dollars, annual rate)'); if (pce) html += specCard('pce', pce.points.map(function (p) { return { d: p.d, v: p.v }; }));
   var rt = mseries('retail'); if (rt) html += specCard('retail', rt.points, 'Census publishes retail sales about six weeks late.');
-  var gdp = manual('Real GDP growth, quarterly annual rate');
-  if (gdp) { var gA = arr(gdp.points), gl = gA.labels.map(qLabel), gn = gA.vals.length - 1; html += card('Real GDP growth, quarterly', '', barLine(gl, gA.vals, null, { barDec: 1, lineDec: 1, leftTitle: 'Growth, % annual rate' })); }
+  var gdp = manual('Real GDP growth (quarterly) annual rate');
+  if (gdp) { var gA = arr(gdp.points), gl = gA.labels.map(qLabel), gn = gA.vals.length - 1; html += card('Real GDP growth (quarterly)', '', barLine(gl, gA.vals, null, { barDec: 1, lineDec: 1, barUnit: '%', leftTitle: 'Growth Rate' })); }
   html += '</div>';
 
   /* ---------- Employment, below Consumers and spending ---------- */
@@ -666,7 +727,7 @@
     if (ps && ss) {
       var pp = withHistory('uspermits', ps.points), sp2 = withHistory('usstarts', ss.points), sm = {}; sp2.forEach(function (p) { sm[p.d] = p.v; });
       var rows = pp.filter(function (p) { return sm[p.d] !== undefined; }), cut = Math.max(0, rows.length - 60); rows = rows.slice(cut);
-      html += card('US building permits and housing starts', '', lineChart(rows.map(function (p) { return monthLabel(p.d); }), [{ vals: rows.map(function (p) { return p.v; }), color: '#d9822b' }, { vals: rows.map(function (p) { return sm[p.d]; }), color: '#1a3a7a' }], { dec: 0, leftTitle: 'Thousands of units, annual rate', h: 250 }), legend([['#d9822b', 'Building permits', 'line'], ['#1a3a7a', 'Housing starts', 'line']]));
+      html += card('US building permits and housing starts', '', lineChart(rows.map(function (p) { return monthLabel(p.d); }), [{ vals: rows.map(function (p) { return p.v; }), color: '#d9822b' }, { vals: rows.map(function (p) { return sm[p.d]; }), color: '#1a3a7a' }], { dec: 0, leftTitle: 'Permits and starts (thousands)', h: 250 }), legend([['#d9822b', 'Building permits', 'line'], ['#1a3a7a', 'Housing starts', 'line']]));
     }
   })();
   (function () {
@@ -677,9 +738,9 @@
     var left = cityS.map(function (x) { return { vals: series(x.pts), color: x.d[2] }; });
     var leg = cityS.map(function (x) { return [x.d[2], x.d[1], 'line']; });
     if (tx) {
-      html += card('Building permits for the four cities and Texas', '', twoAxisLines(months.map(monthLabel), left, { vals: series(tx.points), color: '#6b7686' }, { leftTitle: 'Four cities, units a month', rightTitle: 'Texas, units a month' }), legend(leg.concat([['#6b7686', 'Texas (right axis)', 'line']])));
+      html += card('Building permits for the four cities and Texas', '', twoAxisLines(months.map(monthLabel), left, { vals: series(tx.points), color: '#6b7686' }, { leftTitle: 'Four cities (units a month)', rightTitle: 'Texas (units a month)' }), legend(leg.concat([['#6b7686', 'Texas (right axis)', 'line']])));
     } else {
-      html += card('Building permits for the four cities', '', lineChart(months.map(monthLabel), left, { dec: 0, leftTitle: 'New housing units a month', h: 250 }), legend(leg));
+      html += card('Building permits for the four cities', '', lineChart(months.map(monthLabel), left, { dec: 0, leftTitle: 'Permits', h: 250 }), legend(leg));
     }  })();
 
   var cities =['Dallas-Fort Worth', 'Houston', 'Austin', 'San Antonio'];
@@ -696,7 +757,7 @@
   if (qs.length) {
     var ccol = { 'Dallas-Fort Worth': '#c0392b', 'Houston': '#1a3a7a', 'Austin': '#8e44ad', 'San Antonio': '#1a8f6f' }, occLines = [], occLeg = [];
     cities.forEach(function (c) { var v = vacOf(c); if (!v) return; occLines.push({ vals: qs.map(function (q) { var f = v.quarters.filter(function (x) { return x.q === q; })[0]; return f ? 100 - f.vacancy : null; }), color: ccol[c] }); occLeg.push([ccol[c], c, 'line']); });
-    html += card('Texas Metros Apartment Occupancy Rate', '', lineChart(qs, occLines, { dec: 1, unit: '%', leftTitle: 'Apartment occupancy, %', h: 250, endLabels: occLines.map(function (ln, k) { var ab = { 'Dallas-Fort Worth': 'DFW', 'Houston': 'HOU', 'Austin': 'AUS', 'San Antonio': 'SA' }[occLeg[k][1]] || occLeg[k][1], lv = ln.vals.filter(function (v) { return v !== null; }).slice(-1)[0]; return ab + ' ' + fmt(lv, 1) + '%'; }) }), legend(occLeg));
+    html += card('Texas Metros Apartment Occupancy Rate', '', lineChart(qs, occLines, { dec: 1, unit: '%', leftTitle: 'Apartment occupancy', h: 250, endLabels: occLines.map(function (ln, k) { var ab = { 'Dallas-Fort Worth': 'DFW', 'Houston': 'HOU', 'Austin': 'AUS', 'San Antonio': 'SA' }[occLeg[k][1]] || occLeg[k][1], lv = ln.vals.filter(function (v) { return v !== null; }).slice(-1)[0]; return ab + ' ' + fmt(lv, 1) + '%'; }) }), legend(occLeg));
   }
   html += '</div>';  /* end of the Building Activity row */
   /* ---------- Houston home prices and inventory (HAR) ---------- */
@@ -816,15 +877,15 @@
   (function () {
     var F = 'https://fred.stlouisfed.org/series/', CB = 'https://www.conference-board.org/topics/consumer-confidence', HAR = 'https://www.har.com/content/department/mls';
     var TITLE_LINKS = [
-      ['United States: rigs', 'https://rigcount.bakerhughes.com/na-rig-count'], ['Canada: rigs', 'https://rigcount.bakerhughes.com/na-rig-count'],
+      ['United States', 'https://rigcount.bakerhughes.com/na-rig-count'], ['Canada', 'https://rigcount.bakerhughes.com/na-rig-count'],
       ['US crude oil stocks', 'https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W'],
       ['Texas manufacturing', 'https://www.dallasfed.org/research/surveys/tmos'],
       ['Michigan Consumer Sentiment', F + 'UMCSENT'], ['Conference Board Consumer Confidence', CB], ['CPI (seasonally adjusted)', F + 'CPIAUCSL'], ['PCE (household spending)', F + 'PCE'],
-      ['Retail and food services sales', F + 'RSAFS'], ['Real GDP growth, quarterly', F + 'A191RL1Q225SBEA'],
+      ['Retail and food services sales', F + 'RSAFS'], ['Real GDP growth (quarterly)', F + 'A191RL1Q225SBEA'],
       ['Nonfarm payrolls and job openings', F + 'PAYEMS'], ['Jobs created: blue collar and white collar', 'https://www.bls.gov/news.release/empsit.t17.htm'], ['Unemployment rate and jobless claims', F + 'UNRATE'],
       ['US building permits and housing starts', F + 'PERMIT'], ['Building permits for the four cities', 'https://www.census.gov/construction/bps/'], ['Texas Metros Apartment Occupancy Rate', 'https://www.census.gov/housing/hvs/data/rates.html']
     ];
-    var LEGEND_LINKS = { 'ISM Manufacturing PMI': 'https://www.prnewswire.com/news/institute-for-supply-management/', 'S&P Global US Manufacturing PMI': 'https://www.pmi.spglobal.com/Public/Release/PressReleases', 'Volume of job openings (thousands)': F + 'JTSJOL', 'National unemployment rate': F + 'UNRATE', 'Houston unemployment rate': F + 'HOUS448UR', 'Initial jobless claims, monthly average (right axis)': F + 'ICSA' };
+    var LEGEND_LINKS = { 'ISM Manufacturing PMI': 'https://www.prnewswire.com/news/institute-for-supply-management/', 'S&P Global US Manufacturing PMI': 'https://www.pmi.spglobal.com/Public/Release/PressReleases', 'Volume of job openings (thousands)': F + 'JTSJOL', 'National unemployment rate': F + 'UNRATE', 'Houston unemployment rate': F + 'HOUS448UR', 'Initial jobless claims monthly average (right axis)': F + 'ICSA' };
     var STYLE = 'color:#1a3a7a;text-decoration:underline';
     function wrap(el, url) { el.innerHTML = '<a href="' + url + '" target="_blank" rel="noopener" style="' + STYLE + '">' + el.innerHTML + '</a>'; }
     main.querySelectorAll('.card > h3').forEach(function (h) {
@@ -837,7 +898,7 @@
       while ((n = w.nextNode())) { var s = n.nodeValue.trim(); if (LEGEND_LINKS[s] && !n.parentNode.closest('a') && !n.parentNode.closest('h3') && !n.parentNode.closest('svg')) hit.push([n, s]); }
       hit.forEach(function (p) { var a = document.createElement('a'); a.href = LEGEND_LINKS[p[1]]; a.target = '_blank'; a.rel = 'noopener'; a.style.cssText = STYLE; a.textContent = p[0].nodeValue; p[0].parentNode.replaceChild(a, p[0]); });
     });
-    var TILE_LINKS = { 'VIX': F + 'VIXCLS', '10-year real yield': F + 'DFII10', '10-year Treasury yield': F + 'DGS10', 'Fed funds rate (effective)': F + 'DFF', '30-year mortgage rate': F + 'MORTGAGE30US', 'ERCOT Texas power price': 'https://www.ercot.com/gridmktinfo/dashboards' };
+    var TILE_LINKS = { 'VIX': F + 'VIXCLS', '10-year real yield': F + 'DFII10', '10-year Treasury yield': F + 'DGS10', 'Fed funds rate (effective)': F + 'DFF', '30-year mortgage rate': F + 'MORTGAGE30US', 'ERCOT Texas power price': 'https://www.ercot.com/content/cdr/html/real_time_spp.html' };
     main.querySelectorAll('.tiles6 > .tile > .label:first-child').forEach(function (l) { var u = TILE_LINKS[l.textContent.trim()]; if (u && !l.querySelector('a')) wrap(l, u); });
     var hh = Array.prototype.filter.call(main.querySelectorAll('h2'), function (x) { return x.textContent.indexOf(TITLES.houston) === 0; })[0];
     var grid = hh && hh.nextElementSibling;
