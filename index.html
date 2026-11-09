@@ -627,6 +627,15 @@
     var g = manual(pair[0]); if (!g) return;
     var rA = arr(g.points), yrNow = +rA.labels[rA.labels.length - 1].slice(0, 4), i0 = 0; while (i0 < rA.labels.length && +rA.labels[i0].slice(0, 4) !== yrNow) i0++;
     var rl = rA.labels.slice(i0), rv = rA.vals.slice(i0), n = rv.length - 1, wow = rv.map(function (v, i) { return i === 0 ? null : (v - rv[i - 1]) / rv[i - 1] * 100; }), ch = rv[n] - rv[n - 1], pc = ch / rv[n - 1] * 100;
+    if (pair[1] === 'United States' || pair[1] === 'Canada') {
+      /* United States and Canada: this year against the same weeks of last year, placed by day of the year */
+      var doyOf = function (d) { var p = d.split('-'); return Math.round((Date.UTC(+p[0], +p[1] - 1, +p[2]) - Date.UTC(+p[0], 0, 0)) / 86400000); };
+      var curP = [], prevP = [], barP = [];
+      rA.labels.forEach(function (lb, i) { var y = +lb.slice(0, 4); if (y === yrNow) curP.push({ doy: doyOf(lb), v: rA.vals[i] }); else if (y === yrNow - 1) prevP.push({ doy: doyOf(lb), v: rA.vals[i] }); });
+      curP.forEach(function (p, i) { if (i > 0) barP.push({ doy: p.doy, v: (p.v - curP[i - 1].v) / curP[i - 1].v * 100 }); });
+      html += weeklyYearCard(pair[1] + ' ' + yrNow + ': rigs this week ' + rv[n], curP, prevP, barP, { year: yrNow, leftTitle: 'Rigs', rightTitle: '% change WoW', rightUnit: '%', barLabel: 'WoW %' });
+      return;
+    }
     html += weeklyCard(pair[1] + ' ' + yrNow + ': rigs this week ' + rv[n], rl.map(dayLabel), rv, wow, { leftTitle: 'Rigs', lineLabel: 'Total rigs', rightTitle: '% change WoW', rightUnit: '%', barLabel: 'WoW %' });
   });
   var rigsGridOpen = true;
