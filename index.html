@@ -706,7 +706,7 @@
     var uN = {}, uH = {}, uC = {}, uCn = {}; natU.forEach(function (p) { uN[p.d] = p.v; }); hou.points.forEach(function (p) { uH[p.d] = p.v; });
     var uMonths = natU.map(function (p) { return p.d; }).slice(-12), uget = function (m) { return uMonths.map(function (d) { return (m[d] === undefined || m[d] === null) ? null : m[d]; }); };
     if (ic) { ic.points.forEach(function (p) { if (p.v === null) return; var mk = p.d.slice(0, 7); uC[mk] = (uC[mk] || 0) + p.v; uCn[mk] = (uCn[mk] || 0) + 1; }); Object.keys(uC).forEach(function (k) { uC[k] = Math.round(uC[k] / uCn[k]); }); }
-    html += card('Unemployment rate and jobless claims', '', twoAxisLines(uMonths.map(monthLabel), [{ vals: uget(uH), color: '#d9822b' }, { vals: uget(uN), color: '#1a3a7a' }], { vals: uget(uC), color: '#b9c5d6' }, { rightBars: true, leftZero: true, leftUnit: '%', leftTitle: 'Unemployment rate', rightTitle: 'Claims' }), legend([['#d9822b', 'Houston unemployment rate', 'line'], ['#1a3a7a', 'National unemployment rate', 'line'], ['#b9c5d6', 'Initial jobless claims monthly average (right axis)']]));
+    html += card('Unemployment rate and jobless claims', '', twoAxisLines(uMonths.map(monthLabel), [{ vals: uget(uH), color: '#d9822b' }, { vals: uget(uN), color: '#1a3a7a' }], { vals: uget(uC), color: '#b9c5d6' }, { rightBars: true, leftZero: true, leftUnit: '%', leftTitle: 'Unemployment rate', rightTitle: 'Claims' }), legend([['#d9822b', 'Houston unemployment rate', 'line'], ['#1a3a7a', 'National unemployment rate', 'line'], ['#b9c5d6', 'National initial jobless claims monthly average (right axis)']]));
   } else { if (hou) html += specCard('houston', hou.points.map(function (p) { return { d: p.d, v: p.v }; })); html += blsCard('unrate'); }
   html += '</div>';
 
@@ -894,7 +894,7 @@
       ['Nonfarm payrolls and job openings', F + 'PAYEMS'], ['Jobs created: blue collar and white collar', 'https://www.bls.gov/news.release/empsit.t17.htm'], ['Unemployment rate and jobless claims', F + 'UNRATE'],
       ['US building permits and housing starts', F + 'PERMIT'], ['Building permits for the four cities', 'https://www.census.gov/construction/bps/'], ['Texas Metros Apartment Occupancy Rate', 'https://www.census.gov/housing/hvs/data/rates.html']
     ];
-    var LEGEND_LINKS = { 'ISM Manufacturing PMI': 'https://www.prnewswire.com/news/institute-for-supply-management/', 'S&P Global US Manufacturing PMI': 'https://www.pmi.spglobal.com/Public/Release/PressReleases', 'Volume of job openings (thousands)': F + 'JTSJOL', 'National unemployment rate': F + 'UNRATE', 'Houston unemployment rate': F + 'HOUS448UR', 'Initial jobless claims monthly average (right axis)': F + 'ICSA' };
+    var LEGEND_LINKS = { 'ISM Manufacturing PMI': 'https://www.prnewswire.com/news/institute-for-supply-management/', 'S&P Global US Manufacturing PMI': 'https://www.pmi.spglobal.com/Public/Release/PressReleases', 'Volume of job openings (thousands)': F + 'JTSJOL', 'National unemployment rate': F + 'UNRATE', 'Houston unemployment rate': F + 'HOUS448UR', 'National initial jobless claims monthly average (right axis)': F + 'ICSA' };
     var STYLE = 'color:#1a3a7a;text-decoration:underline';
     function wrap(el, url) { el.innerHTML = '<a href="' + url + '" target="_blank" rel="noopener" style="' + STYLE + '">' + el.innerHTML + '</a>'; }
     main.querySelectorAll('.card > h3').forEach(function (h) {
