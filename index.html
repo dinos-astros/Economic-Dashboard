@@ -521,7 +521,9 @@
 
   /* ---------- Upcoming releases ---------- */
   if (typeof RELEASES !== 'undefined') {
-    var lk = function (r, t) { return r.url ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener" style="color:#1a3a7a;font-weight:700;text-decoration:underline">' + t + '</a>' : t; };
+    /* a report links to its press release only once the release time (Central) has passed; before that the name is plain text, because the link would open the previous report */
+    var nowCT = new Date().toLocaleString('sv-SE', { timeZone: 'America/Chicago' });
+    var lk = function (r, t) { return (r.url && (r.date + ' ' + r.at + ':00') <= nowCT) ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener" style="color:#1a3a7a;font-weight:700;text-decoration:underline">' + t + '</a>' : t; };
     var nowD = new Date(), pad =function (n) { return (n < 10 ? '0' : '') + n; };
     var todayS = nowD.getFullYear() + '-' + pad(nowD.getMonth() + 1) + '-' + pad(nowD.getDate());
     var tmr = new Date(nowD.getTime() + 864e5), tomS = tmr.getFullYear() + '-' + pad(tmr.getMonth() + 1) + '-' + pad(tmr.getDate());
@@ -873,12 +875,12 @@
   var cpiMan = (M.manual || []).filter(function (g) { return /^CPI-U/.test(g.indicator); })[0];
   all = all.map(function (s) { if (!s.ok && cpiMan && /^CPI-U/.test(s.name)) { return { name: s.name + ' (BLS daily limit reached; showing the FRED reading of ' + cpiMan.readOn + ')', ok: true }; } return s; });
   if ((M.manual || []).length) {
-    html += '<div class="card"><h3>Weekly and monthly readings: source and last update</h3><div class="note">Some sites block automatic reading, so these are updated from the source when each new number is published. The last update date shows if one is behind.</div><table><tr><th>Indicator</th><th>Latest figure for</th><th>Last updated</th><th>Source</th></tr>';
+    html += '<details><summary>Weekly and monthly readings: source and last update</summary><div class="note">Some sites block automatic reading, so these are updated from the source when each new number is published. The last update date shows if one is behind.</div><table><tr><th>Indicator</th><th>Latest figure for</th><th>Last updated</th><th>Source</th></tr>';
     M.manual.forEach(function (g) { var p = g.points[g.points.length - 1]; html += '<tr><td>' + esc(g.indicator) + '</td><td>' + esc(p.d) + '</td><td>' + esc(g.readOn) + '</td><td>' + (g.sourceUrl ? '<a href="' + esc(g.sourceUrl) + '">' + esc(g.source) + '</a>' : esc(g.source)) + (g.indicator === 'Conference Board Leading Economic Index' ? '. March to June read from the Conference Board chart, within about 0.1' : '') + '</td></tr>'; });
-    html += '</table></div>';
+    html += '</table></details>';
   }
   if (window.ELECTIONS) {
-    html += '<div class="card"><h3>Elections: sources</h3><table><tr><th>Election</th><th>Source</th></tr>' + ELECTIONS.map(function (e) { return '<tr><td>' + esc(e.country) + ': ' + esc(e.what.split(' (')[0]) + '</td><td>' + e.srcs.map(function (s) { return '<a href="' + esc(s[1]) + '">' + esc(s[0]) + '</a>'; }).join('; ') + '</td></tr>'; }).join('') + '</table></div>';
+    html += '<details><summary>Elections: sources</summary><table><tr><th>Election</th><th>Source</th></tr>' + ELECTIONS.map(function (e) { return '<tr><td>' + esc(e.country) + ': ' + esc(e.what.split(' (')[0]) + '</td><td>' + e.srcs.map(function (s) { return '<a href="' + esc(s[1]) + '">' + esc(s[0]) + '</a>'; }).join('; ') + '</td></tr>'; }).join('') + '</table></details>';
   }
 
   main.innerHTML = html;
