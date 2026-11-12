@@ -39,7 +39,7 @@
   @media (min-width: 1000px) { .watch3 { grid-template-columns: 1fr 1fr 1fr; } }
   .watch3 > .card > svg { max-width: 100%; height: auto; }
   @media (min-width: 1500px) { .real4 { grid-template-columns: repeat(4, 1fr); } }
-  @media (min-width: 1500px) { .watch3 { grid-template-columns: 280px 280px 380px 230px 280px; } }
+  @media (min-width: 1500px) { .watch3 { grid-template-columns: 280px 280px 380px 290px 280px; } }
   @media (min-width: 900px) { .tile.wide { grid-column: span 2; grid-row: span 2; } }
   .card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
   .card .note { font-size: 12.5px; color: #000; margin: 2px 0 8px; }
@@ -605,7 +605,7 @@
       var all = m.h.concat(m.l, m.m20, m.m50, m.m200), mn = Math.min.apply(null, all), mx = Math.max.apply(null, all), raw = (mx - mn) / 5, step = [5, 10, 20, 25, 50, 100].filter(function (x) { return x >= raw; })[0] || 100;
       var lo = Math.floor(mn / step) * step, k = Math.ceil((mx - lo) / step) + 1, hi = lo + (k - 1) * step;
       var X = function (j) { return L + (j + 0.5) / n * pw; }, Y = function (x) { return T + (hi - x) / (hi - lo) * PH; };
-      var INK = '#1c2430', up = m.c[n - 1] >= m.o[n - 1];
+      var INK = '#000', up = m.c[n - 1] >= m.o[n - 1];
       var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
       /* what the call is today, in her words: one word for the market (Bull, Bear or Range) and two for the trend (Trending up or Trending down); the same call for SPY and QQQ because both must meet a rule */
       var cc = dayCall(FN - 1), mWord = { 'Bull': 'Bull', 'Bear': 'Bear', 'Range bound': 'Range bound' }[cc.market] || 'None', tWord = trendFor(s).dir, COLS = { 'Bull': '#1a7f4b', 'Bear': '#c0392b', 'Range bound': '#5a616d', 'Trending up': '#1a7f4b', 'Trending down': '#c0392b' };
@@ -923,10 +923,10 @@
   var fo = manual('FOMC rate decision (basis points)');
   if (fo) {
     section('fed', TITLES.fed, 'The effective overnight rate is in the tiles above.');
-        html += '<div class="card" style="padding:10px 12px;overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(9,minmax(104px,1fr));gap:6px;font-size:12px;text-align:center">';
+        html += '<div class="card" style="padding:10px 12px;overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(9,minmax(104px,1fr));gap:6px;font-size:12px;text-align:center;color:#000">';
     fo.points.slice(-9).forEach(function (p) {
       var up = p.v === null, act = (String(p.n).match(/^[A-Za-z]+/) || [''])[0], rm = String(p.n).match(/Target range (\S+)$/), rng = rm ? rm[1].replace('%-', '-') : '';
-      html += '<div style="border:' + (up ? '2px solid #d9822b;padding:5px 1px' : '1px solid var(--line);padding:6px 2px') + ';border-radius:8px"><div style="white-space:nowrap;color:' + (up ? '#d9822b;font-weight:600' : 'var(--muted)') + '">' + dateLabel(p.d) + '</div><div style="font-weight:600;margin-top:2px">' + esc(act) + '</div><div>' + (up ? 'TBD' : (p.v > 0 ? '+' : '') + p.v + ' bps') + '</div><div style="color:var(--muted);margin-top:2px;min-height:15px">' + esc(rng) + '</div></div>';
+      html += '<div style="border:' + (up ? '3px solid #d9822b;padding:4px 1px' : '1px solid var(--line);padding:6px 2px') + ';border-radius:8px"><div style="white-space:nowrap;color:' + (up ? '#000;font-weight:700' : '#000') + '">' + dateLabel(p.d) + '</div><div style="font-weight:600;margin-top:2px">' + esc(act) + '</div><div>' + (up ? 'TBD' : (p.v > 0 ? '+' : '') + p.v + ' bps') + '</div><div style="color:#000;margin-top:2px;min-height:15px">' + esc(rng) + '</div></div>';
     });
     html += '</div></div>';
   }
