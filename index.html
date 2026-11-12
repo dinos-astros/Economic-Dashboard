@@ -83,6 +83,7 @@
 <script src="listening.js"></script>
 <script src="history.js"></script>
 <script src="crude.js"></script>
+<script src="market.js"></script>
 <script>
 (function () {
   var main = document.getElementById('main');
@@ -513,7 +514,7 @@
   }
 
   /* Every section title lives here. Change a title once and the headings, the top bar and the Glossary groups all follow. */
-  var TITLES = { now: 'Daily Markets', watch: 'Bubble Watch', rigs: 'Rig Counts & Oil Stocks', mfg: 'Manufacturing Health', consumers: 'Consumer Spending', housing: 'Building Activity', houston: 'Houston Housing', calendar: 'Economic Calendar', fed: 'Fed Rate Decisions', elections: 'Elections Calendar', listening: 'Listening To', index: 'Glossary', sources: 'Citations', jobs: 'Employment' };
+  var TITLES = { now: 'Daily Markets', market: 'Daily Market Check', watch: 'Bubble Watch', rigs: 'Rig Counts & Oil Stocks', mfg: 'Manufacturing Health', consumers: 'Consumer Spending', housing: 'Building Activity', houston: 'Houston Housing', calendar: 'Economic Calendar', fed: 'Fed Rate Decisions', elections: 'Elections Calendar', listening: 'Listening To', index: 'Glossary', sources: 'Citations', jobs: 'Employment' };
   var GLOSSARY_GROUP = { 'Consumers and prices': 'consumers', 'Jobs': 'jobs', 'Fed and rates': 'fed', 'Market mood': 'now', 'Recession and Bubble Watch': 'watch', 'Manufacturing': 'mfg', 'Energy': 'rigs', 'Real Estate': 'housing' };
   var glossTitle = function (g) { return GLOSSARY_GROUP[g] && TITLES[GLOSSARY_GROUP[g]] ? TITLES[GLOSSARY_GROUP[g]] : g; };
   var html = '', navItems = [];
@@ -563,6 +564,113 @@
     tvw({ name: 'Stocks, dollar and gold (live)', symbols: [{ name: 'AMEX:SPY', displayName: 'SPY' }, { name: 'FOREXCOM:NSXUSD', displayName: 'Nasdaq 100' }, { name: 'CAPITALCOM:DXY', displayName: 'US Dollar Index' }, { name: 'AMEX:GLD', displayName: 'Gold (GLD fund)' }] }) +
     tvw({ name: 'Oil and natural gas (live)', symbols: [{ name: 'SKILLING:XTIUSD', displayName: 'WTI Crude' }, { name: 'OANDA:BCOUSD', displayName: 'Brent Crude' }, { name: 'SKILLING:NATGAS', displayName: 'NYMEX Nat Gas' }] }) +
     '</div>';
+
+  /* ---------- Daily Market Check: SPY and QQQ daily closes with the 20, 50 and 200 MA (market.js, completed days only). A visual check: the page shows the charts and Jill's rules, it does not call bull or bear. ---------- */
+  if (window.MARKET && MARKET.SPY) {
+    section('market', TITLES.market, '');
+    var DISP = 63; /* trading days drawn on the charts (3 months); market.js carries 29 more so the 30-day checks can be made for the first drawn day */
+    /* the call for any one day t (an index into market.js), by her rules; SPY and QQQ must both meet a rule. Used to colour the Market and Trend bands on the charts. */
+    var dayCall = function (t) {
+      var r = {};
+      ['SPY', 'QQQ'].forEach(function (s) {
+        var f = MARKET[s], up = 0, i, rgn = function (a) { var k = 30, xs = 0, ys = 0, xy = 0, xx = 0, j, y; for (j = 0; j < k; j++) { y = a[t - k + 1 + j]; xs += j; ys += y; xy += j * y; xx += j * j; } var b = (k * xy - xs * ys) / (k * xx - xs * xs), y0 = ys / k - b * (k - 1) / 2; return b * (k - 1) / y0 * 100; };
+        for (i = t - 29; i <= t; i++) if (f.c[i] > f.m50[i]) up++;
+        r[s] = { up: up, c50: rgn(f.m50), c200: rgn(f.m200), hi: rgn(f.h), lo: rgn(f.l), p50: (f.c[t] / f.m50[t] - 1) * 100, p200: (f.c[t] / f.m200[t] - 1) * 100 };
+      });
+      var bothF = function (fn) { return fn(r.SPY) && fn(r.QQQ); };
+      var bull = bothF(function (x) { return x.up >= 21 && x.c50 > 0; }), bear = bothF(function (x) { return x.p200 < 0 && x.c200 < 0; });
+      var tup = bothF(function (x) { return x.hi > 0 && x.lo > 0; }), tdn = bothF(function (x) { return x.hi < 0 && x.lo < 0; });
+      return { market: bull ? 'Bull' : (bear ? 'Bear' : 'Range bound'), trend: tup ? 'Trending up' : (tdn ? 'Trending down' : '') };
+    };
+    /* the trend the way a trading chart shows it (her chart, 12 Nov 2026): a line drawn along the swing highs and a line along the swing lows. A swing high is a day whose high is the highest of the 3 days either side, a swing low the lowest. Each line is the best straight line through its swing points; both rising = trending up, both falling = trending down, and if they disagree the average direction of the two decides. */
+    var trendFor = function (s) {
+      var f = MARKET[s], FN = f.c.length, s0 = FN - DISP, HH = f.h.slice(s0), LL = f.l.slice(s0), n = DISP, K = 3;
+      var fit = function (arr, isHigh) {
+        var pts = [], i, j, ok;
+        for (i = K; i < n - K; i++) { ok = true; for (j = i - K; j <= i + K; j++) { if (j !== i && (isHigh ? arr[j] > arr[i] : arr[j] < arr[i])) { ok = false; break; } } if (ok) pts.push([i, arr[i]]); }
+        if (pts.length < 2) return null;
+        var sx = 0, sy = 0, sxy = 0, sxx = 0; pts.forEach(function (p) { sx += p[0]; sy += p[1]; sxy += p[0] * p[1]; sxx += p[0] * p[0]; });
+        var q = pts.length, b = (q * sxy - sx * sy) / (q * sxx - sx * sx), a = (sy - b * sx) / q;
+        return { a: a, b: b };
+      };
+      var hi = fit(HH, true), lo = fit(LL, false), dir = 'Trending up';
+      if (hi && lo) dir = (hi.b > 0 && lo.b > 0) ? 'Trending up' : ((hi.b < 0 && lo.b < 0) ? 'Trending down' : ((hi.b + lo.b) > 0 ? 'Trending up' : 'Trending down'));
+      return { hi: hi, lo: lo, dir: dir };
+    };    var marketCard = function (s) {
+      /* Yahoo-style: daily candles with the 50 and 200 MA drawn over them, the price scale on the right, volume bars underneath, the open/high/low/close of the latest day across the top, and two bands above the price (Market: bull, bear or range bound; Trend: up or down) that follow the call day by day */
+      var full = MARKET[s], FN = full.c.length, s0 = FN - DISP, m = { open: full.open }, rg = [], i0;
+      ['d', 'o', 'h', 'l', 'c', 'v', 'm20', 'm50', 'm200'].forEach(function (key) { m[key] = full[key].slice(s0); });
+      for (i0 = 0; i0 < DISP; i0++) rg.push(dayCall(s0 + i0));
+      var n = DISP, W = 700, H = 404, L = 12, R = 72, T = 54, PH = 250, VT = 318, VH = 50, pw = W - L - R, i, v, yy;
+      var all = m.h.concat(m.l, m.m20, m.m50, m.m200), mn = Math.min.apply(null, all), mx = Math.max.apply(null, all), raw = (mx - mn) / 5, step = [5, 10, 20, 25, 50, 100].filter(function (x) { return x >= raw; })[0] || 100;
+      var lo = Math.floor(mn / step) * step, k = Math.ceil((mx - lo) / step) + 1, hi = lo + (k - 1) * step;
+      var X = function (j) { return L + (j + 0.5) / n * pw; }, Y = function (x) { return T + (hi - x) / (hi - lo) * PH; };
+      var INK = '#1c2430', up = m.c[n - 1] >= m.o[n - 1];
+      var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
+      /* what the call is today, in her words: one word for the market (Bull, Bear or Range) and two for the trend (Trending up or Trending down); the same call for SPY and QQQ because both must meet a rule */
+      var cc = dayCall(FN - 1), mWord = { 'Bull': 'Bull', 'Bear': 'Bear', 'Range bound': 'Range bound' }[cc.market] || 'None', tWord = trendFor(s).dir, COLS = { 'Bull': '#1a7f4b', 'Bear': '#c0392b', 'Range bound': '#3a4250', 'Trending up': '#1a7f4b', 'Trending down': '#c0392b' };
+      out += '<text x="' + L + '" y="20" font-size="17" font-weight="700" fill="' + (COLS[mWord] || INK) + '">' + mWord + '</text><text x="' + (L + 140) + '" y="20" font-size="17" font-weight="700" fill="' + (COLS[tWord] || INK) + '">' + tWord + '</text>';      out += '<text x="' + L + '" y="40" font-size="13" fill="' + INK + '">Open ' + fmt(m.o[n - 1], 2) + '&#160;&#160;&#160;&#160;High ' + fmt(m.h[n - 1], 2) + '&#160;&#160;&#160;&#160;Low ' + fmt(m.l[n - 1], 2) + '&#160;&#160;&#160;&#160;Close ' + fmt(m.c[n - 1], 2) + '&#160;&#160;&#160;&#160;Volume ' + fmt(m.v[n - 1] / 1e6, 1) + ' million shares</text>';
+      for (i = 0; i < k; i++) { v = lo + i * step; yy = Y(v); out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '" stroke="#e4e8ee"/><text x="' + (W - R + 8) + '" y="' + (yy + 4).toFixed(1) + '" font-size="12.5" fill="' + INK + '">' + fmt(v, 0) + '</text>'; }
+      var bw = pw / n * 0.62, vmax = Math.max.apply(null, m.v);
+      for (i = 0; i < n; i++) {
+        var u = m.c[i] >= m.o[i], col = u ? '#1a7f4b' : '#c0392b', yo = Y(m.o[i]), yc = Y(m.c[i]);
+        out += '<line x1="' + X(i).toFixed(1) + '" x2="' + X(i).toFixed(1) + '" y1="' + Y(m.h[i]).toFixed(1) + '" y2="' + Y(m.l[i]).toFixed(1) + '" stroke="' + col + '" stroke-width="1.4"/>' +
+          '<rect x="' + (X(i) - bw / 2).toFixed(1) + '" y="' + Math.min(yo, yc).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1.5, Math.abs(yo - yc)).toFixed(1) + '" fill="' + col + '"/>' +
+          '<rect x="' + (X(i) - bw / 2).toFixed(1) + '" y="' + (VT + VH - m.v[i] / vmax * VH).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (m.v[i] / vmax * VH).toFixed(1) + '" fill="' + col + '" opacity="0.55"/>';
+      }
+      var line = function (a, color, w) { return '<polyline fill="none" stroke="' + color + '" stroke-width="' + w + '" points="' + a.map(function (x, j) { return X(j).toFixed(1) + ',' + Y(x).toFixed(1); }).join(' ') + '"/>'; };
+      var tr = trendFor(s);
+      out += '<clipPath id="pc' + s + '"><rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + PH + '"/></clipPath>';
+      [[tr.hi, '#c0399a'], [tr.lo, '#0f8aa8']].forEach(function (ln) { if (ln[0]) out += '<line x1="' + X(0).toFixed(1) + '" y1="' + Y(ln[0].a).toFixed(1) + '" x2="' + X(n - 1).toFixed(1) + '" y2="' + Y(ln[0].a + ln[0].b * (n - 1)).toFixed(1) + '" stroke="' + ln[1] + '" stroke-width="2" stroke-dasharray="7 4" clip-path="url(#pc' + s + ')"/>'; });      out += line(m.m200, '#7b3fa0', 2.4) + line(m.m50, '#1a3a7a', 2.4) + line(m.m20, '#d9822b', 2.4);
+      out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + (VT + VH) + '" y2="' + (VT + VH) + '" stroke="#e4e8ee"/><text x="' + (L + 2) + '" y="' + (VT + 10) + '" font-size="11.5" fill="' + INK + '">Volume (millions)</text><text x="' + (W - R + 8) + '" y="' + (VT + 10) + '" font-size="12" fill="' + INK + '">' + fmt(vmax / 1e6, 0) + '</text>';
+      var firstLabel = true;
+      /* exact dates on the axis: every 10th trading day (every 5th on a short window) counted back from the latest close, the year on the first one and on each January */
+      var lstep = n > 40 ? 10 : 5;
+      for (i = (n - 1) % lstep; i < n; i += lstep) {
+        if (i < 5) continue;
+        var mo = +m.d[i].slice(5, 7);
+        out += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" font-size="12" fill="' + INK + '" text-anchor="middle">' + dayLabel(m.d[i]) + ((firstLabel || (mo === 1 && +m.d[i].slice(8, 10) <= 7)) ? ', ' + m.d[i].slice(0, 4) : '') + '</text>'; firstLabel = false;
+      }
+      out += '<text transform="rotate(90 ' + (W - 6) + ' ' + (T + PH / 2) + ')" x="' + (W - 6) + '" y="' + (T + PH / 2) + '" font-size="12" fill="#000" text-anchor="middle">Price (dollars)</text></svg>';
+      return card(s, '', out, legend([['#d9822b', '20 MA', 'line'], ['#1a3a7a', '50 MA', 'line'], ['#7b3fa0', '200 MA', 'line'], ['#c0399a', 'Highs trendline', 'dash'], ['#0f8aa8', 'Lows trendline', 'dash']]));
+    };
+    /* the call, from Jill's rules only, over the 30 days shown: sloping up = the MA line trends up over the 30 days, sloping down = trends down (the best-fit straight line through the 30 points; "over time it is moving up", her word); flat = within 2% either way; "most of the time" above the 50 MA = 70% of the 30 days (21 of 30). Both SPY and QQQ must meet a rule. */
+    var mk = {}, pc = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1) + '%'; };
+    ['SPY', 'QQQ'].forEach(function (s) {
+      var m = MARKET[s], n = m.c.length, ch = function (a) { /* the line over the 30 days: the straight line that best fits it, as the % it rises or falls from the first day to the last */ var k = 30, xs = 0, ys = 0, xy = 0, xx = 0, j, y; for (j = 0; j < k; j++) { y = a[n - k + j]; xs += j; ys += y; xy += j * y; xx += j * j; } var b = (k * xy - xs * ys) / (k * xx - xs * xs), y0 = ys / k - b * (k - 1) / 2; return b * (k - 1) / y0 * 100; }, up = 0, i;
+      for (i = n - 30; i < n; i++) if (m.c[i] > m.m50[i]) up++;
+      mk[s] = { up: up, c50: ch(m.m50), c200: ch(m.m200), hi: ch(m.h), lo: ch(m.l), p50: (m.c[n - 1] / m.m50[n - 1] - 1) * 100, p200: (m.c[n - 1] / m.m200[n - 1] - 1) * 100 };
+    });
+    var both = function (f) { return f(mk.SPY) && f(mk.QQQ); };
+    var isBull = both(function (x) { return x.up >= 21 && x.c50 > 0; }), isBear = both(function (x) { return x.p200 < 0 && x.c200 < 0; }); var isRange = !isBull && !isBear;
+    /* trend, her definition (12 Nov 2026): trending up = higher highs and lows, trending down = lower highs and lows, read from the line through the 30 highs and the line through the 30 lows */
+    var trS = trendFor('SPY'), trQ = trendFor('QQQ'), isUp = trS.dir === 'Trending up' && trQ.dir === 'Trending up', isDown = trS.dir === 'Trending down' && trQ.dir === 'Trending down', trDesc = function (x) { return (x.hi ? (x.hi.b > 0 ? 'Highs line rising' : 'Highs line falling') : 'Highs line n/a') + ', ' + (x.lo ? (x.lo.b > 0 ? 'lows line rising' : 'lows line falling') : 'lows line n/a'); };
+    var callTxt = isBull ? 'Bull market' : (isBear ? 'Bear market' : 'Range bound');
+    var trendTxt = trS.dir === trQ.dir ? trS.dir : ('SPY ' + trS.dir.toLowerCase() + ', QQQ ' + trQ.dir.toLowerCase());
+    var mrow = function (name, a, b, met) { return '<tr><td style="white-space:nowrap;font-weight:600">' + name + '</td><td>' + a + '</td><td>' + b + '</td><td style="white-space:nowrap">' + (met ? 'Yes' : 'No') + '</td></tr>'; };
+    var callTable = '<div class="card" style="margin-top:14px"><table><tr><th>Rule</th><th>SPY</th><th>QQQ</th><th>Met</th></tr>' +
+      mrow('Bull market', 'Above the 50 MA on ' + mk.SPY.up + ' of 30 days; 50 MA ' + pc(mk.SPY.c50) + ' over the 30 days', 'Above the 50 MA on ' + mk.QQQ.up + ' of 30 days; 50 MA ' + pc(mk.QQQ.c50) + ' over the 30 days', isBull) +
+      mrow('Bear market', 'Price ' + pc(mk.SPY.p200) + ' from the 200 MA; 200 MA ' + pc(mk.SPY.c200) + ' over the 30 days', 'Price ' + pc(mk.QQQ.p200) + ' from the 200 MA; 200 MA ' + pc(mk.QQQ.c200) + ' over the 30 days', isBear) +
+      mrow('Range bound', 'Not a bull market and not a bear market; price ' + pc(mk.SPY.p50) + ' from the 50 MA', 'Not a bull market and not a bear market; price ' + pc(mk.QQQ.p50) + ' from the 50 MA', isRange) +
+      mrow('Trending up', trDesc(trS), trDesc(trQ), isUp) +
+      mrow('Trending down', trDesc(trS), trDesc(trQ), isDown) +
+      '</table></div>';
+    html += '<div class="grid charts" style="grid-template-columns:repeat(auto-fit,minmax(min(700px,100%),1fr))">' + marketCard('SPY') + marketCard('QQQ') + '</div>';
+    html += callTable;
+    var MRULES = [
+      ['Bull market', 'SPY and QQQ are both above their 50 MA most of the time (70% of the past 30 days), and the 50 MA is angled upward. In a bull market, breakouts follow through more often, pullbacks bounce cleaner, and leaders keep leading.'],
+      ['Bear market', 'Price trades below the 200 MA and the 200 MA slopes downward.'],
+      ['Range bound', 'Price chops around the 50 MA, and the 50 MA and 200 MA flatten out. It rewards quick trades because of mean reversion, and it punishes wide stops and "hope it runs" thinking. Look for tight ranges and catalysts such as earnings, volatility, contractions, and clear support and resistance. Buy near support, sell into resistance, and don\'t chase.'],
+      ['Swing trades', 'When price is above the 200 MA and the 200 MA is trending upward, the market supports swing trades that last days and weeks.'],
+      ['Trade aggressively', 'If both SPY and QQQ sit above a rising 50 MA and a rising 200 MA, trade aggressively and manage risk.'],
+      ['Trade small', 'If both SPY and QQQ sit below a falling 200 MA, trade small and quick, and with strong confirmation.'],
+      ['Chop around the 50 MA', 'If both SPY and QQQ chop around the 50 MA, reduce position size, tighten your time horizon, and expect fakeouts.'],
+      ['Trending up', 'Higher highs and higher lows. On the chart, the line along the swing highs and the line along the swing lows both rise.'],
+      ['Trending down', 'Lower highs and lower lows. On the chart, the line along the swing highs and the line along the swing lows both fall.'],
+      ['Chop', 'Over the last 20 to 30 candles, price whipsaws and the MAs flatten. Reduce trading size.']
+    ];
+
+  }
 
   /* ---------- Recession and Bubble Watch ---------- */
   section('watch', TITLES.watch, '');
@@ -911,6 +1019,7 @@
   (function () {
     var F = 'https://fred.stlouisfed.org/series/', CB = 'https://www.conference-board.org/topics/consumer-confidence', HAR = 'https://www.har.com/content/department/mls';
     var TITLE_LINKS = [
+      ['SPY', 'https://finance.yahoo.com/quote/SPY/history/'], ['QQQ', 'https://finance.yahoo.com/quote/QQQ/history/'],
       ['United States', 'https://rigcount.bakerhughes.com/na-rig-count'], ['Canada', 'https://rigcount.bakerhughes.com/na-rig-count'],
       ['US crude oil stocks', 'https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W'],
       ['Texas manufacturing', 'https://www.dallasfed.org/research/surveys/tmos'],
