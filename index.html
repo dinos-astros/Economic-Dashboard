@@ -815,9 +815,14 @@
   var fo = manual('FOMC rate decision (basis points)');
   if (fo) {
     section('fed', TITLES.fed, 'The effective overnight rate is in the tiles above.');
-    html += '<div class="card"><table><tr><th>Meeting</th><th>Decision</th><th class="num">Change</th></tr>';
-    fo.points.slice().reverse().slice(0, 9).forEach(function (p) { html += '<tr><td>' + dateLabel(p.d) + '</td><td>' + esc(p.n) + '</td><td class="num">' + (p.v === null ? '' : (p.v > 0 ? '+' : '') + p.v + ' bps') + '</td></tr>'; });
-    html += '</table></div>';
+    /* the committee vote (for-against) from each FOMC statement on federalreserve.gov; add the new meeting here when its statement is out */
+    var FED_VOTES = { '2025-12-10': '9-3', '2026-01-28': '10-2', '2026-03-18': '11-1', '2026-04-29': '8-4', '2026-06-17': '12-0', '2026-07-29': '9-3', '2026-09-16': '12-0', '2026-10-28': '10-2' };
+    html += '<div class="card" style="padding:10px 12px;overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(9,minmax(104px,1fr));gap:6px;font-size:12px;text-align:center">';
+    fo.points.slice(-9).forEach(function (p) {
+      var up = p.v === null, act = (String(p.n).match(/^[A-Za-z]+/) || [''])[0], rm = String(p.n).match(/Target range (\S+)$/), rng = rm ? rm[1].replace('%-', '-') : '';
+      html += '<div style="border:' + (up ? '2px solid #d9822b;padding:5px 1px' : '1px solid var(--line);padding:6px 2px') + ';border-radius:8px"><div style="white-space:nowrap;color:' + (up ? '#d9822b;font-weight:600' : 'var(--muted)') + '">' + dateLabel(p.d) + '</div><div style="font-weight:600;margin-top:2px">' + esc(act) + '</div><div>' + (up ? 'TBD' : (p.v > 0 ? '+' : '') + p.v + ' bps') + '</div><div style="color:var(--muted);margin-top:2px;min-height:15px">' + esc(rng) + '</div><div style="margin-top:2px;min-height:15px">' + (FED_VOTES[p.d] ? 'Vote ' + FED_VOTES[p.d] : '') + '</div></div>';
+    });
+    html += '</div></div>';
   }
 
   /* ---------- Elections ---------- */
