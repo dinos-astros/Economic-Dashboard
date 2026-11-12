@@ -601,16 +601,16 @@
       var full = MARKET[s], FN = full.c.length, s0 = FN - DISP, m = { open: full.open }, rg = [], i0;
       ['d', 'o', 'h', 'l', 'c', 'v', 'm20', 'm50', 'm200'].forEach(function (key) { m[key] = full[key].slice(s0); });
       for (i0 = 0; i0 < DISP; i0++) rg.push(dayCall(s0 + i0));
-      var n = DISP, W = 700, H = 404, L = 12, R = 72, T = 54, PH = 250, VT = 318, VH = 50, pw = W - L - R, i, v, yy;
+      var n = DISP, W = 780, H = 300, L = 12, R = 72, T = 36, PH = 180, VT = 228, VH = 34, pw = W - L - R, i, v, yy;
       var all = m.h.concat(m.l, m.m20, m.m50, m.m200), mn = Math.min.apply(null, all), mx = Math.max.apply(null, all), raw = (mx - mn) / 5, step = [5, 10, 20, 25, 50, 100].filter(function (x) { return x >= raw; })[0] || 100;
       var lo = Math.floor(mn / step) * step, k = Math.ceil((mx - lo) / step) + 1, hi = lo + (k - 1) * step;
       var X = function (j) { return L + (j + 0.5) / n * pw; }, Y = function (x) { return T + (hi - x) / (hi - lo) * PH; };
       var INK = '#1c2430', up = m.c[n - 1] >= m.o[n - 1];
       var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
       /* what the call is today, in her words: one word for the market (Bull, Bear or Range) and two for the trend (Trending up or Trending down); the same call for SPY and QQQ because both must meet a rule */
-      var cc = dayCall(FN - 1), mWord = { 'Bull': 'Bull', 'Bear': 'Bear', 'Range bound': 'Range bound' }[cc.market] || 'None', tWord = trendFor(s).dir, COLS = { 'Bull': '#1a7f4b', 'Bear': '#c0392b', 'Range bound': '#3a4250', 'Trending up': '#1a7f4b', 'Trending down': '#c0392b' };
-      out += '<text x="' + L + '" y="20" font-size="17" font-weight="700" fill="' + (COLS[mWord] || INK) + '">' + mWord + '</text><text x="' + (L + 140) + '" y="20" font-size="17" font-weight="700" fill="' + (COLS[tWord] || INK) + '">' + tWord + '</text>';      out += '<text x="' + L + '" y="40" font-size="13" fill="' + INK + '">Open ' + fmt(m.o[n - 1], 2) + '&#160;&#160;&#160;&#160;High ' + fmt(m.h[n - 1], 2) + '&#160;&#160;&#160;&#160;Low ' + fmt(m.l[n - 1], 2) + '&#160;&#160;&#160;&#160;Close ' + fmt(m.c[n - 1], 2) + '&#160;&#160;&#160;&#160;Volume ' + fmt(m.v[n - 1] / 1e6, 1) + ' million shares</text>';
-      for (i = 0; i < k; i++) { v = lo + i * step; yy = Y(v); out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '" stroke="#e4e8ee"/><text x="' + (W - R + 8) + '" y="' + (yy + 4).toFixed(1) + '" font-size="12.5" fill="' + INK + '">' + fmt(v, 0) + '</text>'; }
+      var cc = dayCall(FN - 1), mWord = { 'Bull': 'Bull', 'Bear': 'Bear', 'Range bound': 'Range bound' }[cc.market] || 'None', tWord = trendFor(s).dir, COLS = { 'Bull': '#1a7f4b', 'Bear': '#c0392b', 'Range bound': '#5a616d', 'Trending up': '#1a7f4b', 'Trending down': '#c0392b' };
+      out += '<text x="' + L + '" y="18" font-size="13" fill="' + INK + '">Open ' + fmt(m.o[n - 1], 2) + '&#160;&#160;&#160;&#160;High ' + fmt(m.h[n - 1], 2) + '&#160;&#160;&#160;&#160;Low ' + fmt(m.l[n - 1], 2) + '&#160;&#160;&#160;&#160;Close ' + fmt(m.c[n - 1], 2) + '&#160;&#160;&#160;&#160;Volume ' + fmt(m.v[n - 1] / 1e6, 1) + ' million shares</text>';
+      for (i = 0; i < k; i++) { v = lo + i * step; yy = Y(v); out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '" stroke="#e4e8ee"/><text x="' + (W - R + 8) + '" y="' + (yy + 4).toFixed(1) + '" font-size="13.5" fill="' + INK + '">' + fmt(v, 0) + '</text>'; }
       var bw = pw / n * 0.62, vmax = Math.max.apply(null, m.v);
       for (i = 0; i < n; i++) {
         var u = m.c[i] >= m.o[i], col = u ? '#1a7f4b' : '#c0392b', yo = Y(m.o[i]), yc = Y(m.c[i]);
@@ -629,10 +629,10 @@
       for (i = (n - 1) % lstep; i < n; i += lstep) {
         if (i < 5) continue;
         var mo = +m.d[i].slice(5, 7);
-        out += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" font-size="12" fill="' + INK + '" text-anchor="middle">' + dayLabel(m.d[i]) + ((firstLabel || (mo === 1 && +m.d[i].slice(8, 10) <= 7)) ? ', ' + m.d[i].slice(0, 4) : '') + '</text>'; firstLabel = false;
+        out += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" font-size="13" fill="' + INK + '" text-anchor="middle">' + dayLabel(m.d[i]) + ((firstLabel || (mo === 1 && +m.d[i].slice(8, 10) <= 7)) ? ', ' + m.d[i].slice(0, 4) : '') + '</text>'; firstLabel = false;
       }
       out += '<text transform="rotate(90 ' + (W - 6) + ' ' + (T + PH / 2) + ')" x="' + (W - 6) + '" y="' + (T + PH / 2) + '" font-size="12" fill="#000" text-anchor="middle">Price (dollars)</text></svg>';
-      return card(s, '', out, legend([['#d9822b', '20 MA', 'line'], ['#1a3a7a', '50 MA', 'line'], ['#7b3fa0', '200 MA', 'line'], ['#c0399a', 'Highs trendline', 'dash'], ['#0f8aa8', 'Lows trendline', 'dash']]));
+      return '<div class="card"><h3 style="display:flex;flex-wrap:wrap;gap:4px 34px;align-items:baseline"><span class="ttl">' + s + '</span><span style="color:#000">Market: <span style="color:' + (COLS[mWord] || INK) + '">' + mWord + '</span></span><span style="color:#000">Trend: <span style="color:' + (COLS[tWord] || INK) + '">' + (tWord === 'Trending up' ? 'Up' : 'Down') + '</span></span></h3>' + out + legend([['#d9822b', '20 MA', 'line'], ['#1a3a7a', '50 MA', 'line'], ['#7b3fa0', '200 MA', 'line'], ['#c0399a', 'Highs trendline', 'dash'], ['#0f8aa8', 'Lows trendline', 'dash']]) + '</div>';
     };
     /* the call, from Jill's rules only, over the 30 days shown: sloping up = the MA line trends up over the 30 days, sloping down = trends down (the best-fit straight line through the 30 points; "over time it is moving up", her word); flat = within 2% either way; "most of the time" above the 50 MA = 70% of the 30 days (21 of 30). Both SPY and QQQ must meet a rule. */
     var mk = {}, pc = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1) + '%'; };
@@ -648,14 +648,14 @@
     var callTxt = isBull ? 'Bull market' : (isBear ? 'Bear market' : 'Range bound');
     var trendTxt = trS.dir === trQ.dir ? trS.dir : ('SPY ' + trS.dir.toLowerCase() + ', QQQ ' + trQ.dir.toLowerCase());
     var mrow = function (name, a, b, met) { return '<tr><td style="white-space:nowrap;font-weight:600">' + name + '</td><td>' + a + '</td><td>' + b + '</td><td style="white-space:nowrap">' + (met ? 'Yes' : 'No') + '</td></tr>'; };
-    var callTable = '<div class="card" style="margin-top:14px"><table><tr><th>Rule</th><th>SPY</th><th>QQQ</th><th>Met</th></tr>' +
+    var callTable = '<details style="margin-top:14px;width:fit-content;max-width:100%;overflow-x:auto"><summary>Market and trend rules</summary><table style="white-space:nowrap"><tr><th>Rule</th><th>SPY</th><th>QQQ</th><th>Met</th></tr>' +
       mrow('Bull market', 'Above the 50 MA on ' + mk.SPY.up + ' of 30 days; 50 MA ' + pc(mk.SPY.c50) + ' over the 30 days', 'Above the 50 MA on ' + mk.QQQ.up + ' of 30 days; 50 MA ' + pc(mk.QQQ.c50) + ' over the 30 days', isBull) +
       mrow('Bear market', 'Price ' + pc(mk.SPY.p200) + ' from the 200 MA; 200 MA ' + pc(mk.SPY.c200) + ' over the 30 days', 'Price ' + pc(mk.QQQ.p200) + ' from the 200 MA; 200 MA ' + pc(mk.QQQ.c200) + ' over the 30 days', isBear) +
       mrow('Range bound', 'Not a bull market and not a bear market; price ' + pc(mk.SPY.p50) + ' from the 50 MA', 'Not a bull market and not a bear market; price ' + pc(mk.QQQ.p50) + ' from the 50 MA', isRange) +
       mrow('Trending up', trDesc(trS), trDesc(trQ), isUp) +
       mrow('Trending down', trDesc(trS), trDesc(trQ), isDown) +
-      '</table></div>';
-    html += '<div class="grid charts" style="grid-template-columns:repeat(auto-fit,minmax(min(700px,100%),1fr))">' + marketCard('SPY') + marketCard('QQQ') + '</div>';
+      '</table></details>';
+    html += '<div class="grid charts" style="grid-template-columns:repeat(auto-fit,minmax(min(560px,100%),1fr))">' + marketCard('SPY') + marketCard('QQQ') + '</div>';
     html += callTable;
     var MRULES = [
       ['Bull market', 'SPY and QQQ are both above their 50 MA most of the time (70% of the past 30 days), and the 50 MA is angled upward. In a bull market, breakouts follow through more often, pullbacks bounce cleaner, and leaders keep leading.'],
@@ -923,12 +923,10 @@
   var fo = manual('FOMC rate decision (basis points)');
   if (fo) {
     section('fed', TITLES.fed, 'The effective overnight rate is in the tiles above.');
-    /* the committee vote (for-against) from each FOMC statement on federalreserve.gov; add the new meeting here when its statement is out */
-    var FED_VOTES = { '2025-12-10': '9-3', '2026-01-28': '10-2', '2026-03-18': '11-1', '2026-04-29': '8-4', '2026-06-17': '12-0', '2026-07-29': '9-3', '2026-09-16': '12-0', '2026-10-28': '10-2' };
-    html += '<div class="card" style="padding:10px 12px;overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(9,minmax(104px,1fr));gap:6px;font-size:12px;text-align:center">';
+        html += '<div class="card" style="padding:10px 12px;overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(9,minmax(104px,1fr));gap:6px;font-size:12px;text-align:center">';
     fo.points.slice(-9).forEach(function (p) {
       var up = p.v === null, act = (String(p.n).match(/^[A-Za-z]+/) || [''])[0], rm = String(p.n).match(/Target range (\S+)$/), rng = rm ? rm[1].replace('%-', '-') : '';
-      html += '<div style="border:' + (up ? '2px solid #d9822b;padding:5px 1px' : '1px solid var(--line);padding:6px 2px') + ';border-radius:8px"><div style="white-space:nowrap;color:' + (up ? '#d9822b;font-weight:600' : 'var(--muted)') + '">' + dateLabel(p.d) + '</div><div style="font-weight:600;margin-top:2px">' + esc(act) + '</div><div>' + (up ? 'TBD' : (p.v > 0 ? '+' : '') + p.v + ' bps') + '</div><div style="color:var(--muted);margin-top:2px;min-height:15px">' + esc(rng) + '</div><div style="margin-top:2px;min-height:15px">' + (FED_VOTES[p.d] ? 'Vote ' + FED_VOTES[p.d] : '') + '</div></div>';
+      html += '<div style="border:' + (up ? '2px solid #d9822b;padding:5px 1px' : '1px solid var(--line);padding:6px 2px') + ';border-radius:8px"><div style="white-space:nowrap;color:' + (up ? '#d9822b;font-weight:600' : 'var(--muted)') + '">' + dateLabel(p.d) + '</div><div style="font-weight:600;margin-top:2px">' + esc(act) + '</div><div>' + (up ? 'TBD' : (p.v > 0 ? '+' : '') + p.v + ' bps') + '</div><div style="color:var(--muted);margin-top:2px;min-height:15px">' + esc(rng) + '</div></div>';
     });
     html += '</div></div>';
   }
@@ -976,7 +974,7 @@
       return h + '</table>';
     }
     window.listenTable = listenTable;
-    html += '<div class="card" id="listenBox">' + listenTable() + '</div>';
+    html += '<details><summary>Latest episodes</summary><div id="listenBox" style="overflow-x:auto">' + listenTable() + '</div></details>';
   }
   /* Leading, coincident or lagging, shown in the Glossary. Her classification (8 Nov 2026): interest rates and building permits leading, payrolls lagging, and the stock market labelled leading because most people treat it that way. */
   var TIMING = {
@@ -1030,7 +1028,7 @@
     ];
     var LEGEND_LINKS = { 'ISM Manufacturing PMI': 'https://www.prnewswire.com/news/institute-for-supply-management/', 'S&P Global US Manufacturing PMI': 'https://www.pmi.spglobal.com/Public/Release/PressReleases', 'Volume of job openings (thousands)': F + 'JTSJOL', 'National unemployment rate': F + 'UNRATE', 'Houston unemployment rate': F + 'HOUS448UR', 'National initial jobless claims monthly average (right axis)': F + 'ICSA' };
     var STYLE = 'color:#1a3a7a;text-decoration:underline';
-    function wrap(el, url) { el.innerHTML = '<a href="' + url + '" target="_blank" rel="noopener" style="' + STYLE + '">' + el.innerHTML + '</a>'; }
+    function wrap(el, url) { var tg = el.querySelector('.ttl') || el; tg.innerHTML = '<a href="' + url + '" target="_blank" rel="noopener" style="' + STYLE + '">' + tg.innerHTML + '</a>'; }
     main.querySelectorAll('.card > h3').forEach(function (h) {
       if (h.querySelector('a')) return;
       for (var i = 0; i < TITLE_LINKS.length; i++) if (h.textContent.indexOf(TITLE_LINKS[i][0]) === 0) { wrap(h, TITLE_LINKS[i][1]); break; }
