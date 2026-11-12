@@ -829,12 +829,30 @@
   if (window.ELECTIONS) {
     section('elections', TITLES.elections, '');
     var todayD = new Date(todayS + 'T00:00:00');
-    html += '<div class="card"><table><tr><th>Country</th><th>Election</th><th>Last held</th><th>Next election</th><th class="num">Days away</th></tr>';
+    /* a timeline from today: each election with a date is a dot placed by days away, the soonest in orange, labels alternate above and below; elections with no date are listed under the line */
+    var tl = [], noDate = [];
     ELECTIONS.forEach(function (e) {
       var days = e.date ? Math.round((new Date(e.date + 'T00:00:00') - todayD) / 86400000) : null;
-      html += '<tr><td>' + esc(e.country) + '</td><td>' + esc(e.what) + '</td><td>' + esc(e.last) + '</td><td>' + esc(e.when) + '</td><td class="num">' + (days === null ? '' : fmt(days, 0)) + '</td></tr>';
+      if (days !== null) tl.push({ e: e, days: days });
+      else if (e.plot) tl.push({ e: e, days: Math.round((new Date(e.plot + 'T00:00:00') - todayD) / 86400000) }); /* no exact day: placed in its month and labelled with the month */
+      else noDate.push(e);
     });
-    html += '</table></div>';
+    tl.sort(function (a, b) { return a.days - b.days; });
+    var TX0 = 50, TY = 92, TMAX = Math.max.apply(null, tl.map(function (o) { return o.days; })), PPD = 690 / (TMAX + 150), tsv = '<svg width="100%" viewBox="0 0 760 192" style="display:block" role="img"><title>Elections timeline</title><line x1="' + TX0 + '" y1="' + TY + '" x2="740" y2="' + TY + '" stroke="#9aa5b5" stroke-width="2"/>';
+    tsv += '<line x1="' + TX0 + '" y1="' + (TY - 4) + '" x2="' + TX0 + '" y2="' + (TY + 4) + '" stroke="#9aa5b5"/><text x="' + TX0 + '" y="' + (TY + 18) + '" font-size="11" text-anchor="middle" fill="#6b7686">Now</text>';
+    for (var ty = todayD.getFullYear() + 1; ; ty++) {
+      var tx = TX0 + Math.round((new Date(ty + '-01-01T00:00:00') - todayD) / 86400000) * PPD; if (tx > 732) break;
+      tsv += '<line x1="' + tx.toFixed(1) + '" y1="' + (TY - 4) + '" x2="' + tx.toFixed(1) + '" y2="' + (TY + 4) + '" stroke="#9aa5b5"/><text x="' + tx.toFixed(1) + '" y="' + (TY + 18) + '" font-size="11" text-anchor="middle" fill="#6b7686">' + ty + '</text>';
+    }
+    tl.forEach(function (o, i) {
+      var x = TX0 + o.days * PPD, above = i % 2 === 0, tall = Math.floor(i / 2) % 2 === 1, col = i === 0 ? '#d9822b' : '#1a3a7a', lx = Math.max(80, Math.min(680, x)).toFixed(1);
+      var end = above ? (tall ? 32 : 62) : (tall ? 152 : 122), y1 = above ? TY - 5 : TY + 5;
+      var ly = above ? end - 18 : end + 15;
+      tsv += '<line x1="' + x.toFixed(1) + '" y1="' + y1 + '" x2="' + x.toFixed(1) + '" y2="' + end + '" stroke="' + col + '"/><circle cx="' + x.toFixed(1) + '" cy="' + TY + '" r="5" fill="' + col + '"/>' +
+        '<text x="' + lx + '" y="' + ly + '" font-size="11" text-anchor="middle" fill="#1c2430" font-weight="600">' + esc(o.e.country) + '</text><text x="' + lx + '" y="' + (ly + 13) + '" font-size="11" text-anchor="middle" fill="#6b7686">' + esc(o.e.short) + ', ' + esc(o.e.dlabel) + '</text>';
+    });
+    tsv += '</svg>';
+    html += '<div class="card" style="padding:10px 12px;max-width:780px">' + tsv + '</div>';
   }
 
   /* ---------- What I am listening to ---------- */
