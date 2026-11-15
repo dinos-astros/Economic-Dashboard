@@ -34,17 +34,17 @@
   .tile .flat { color: #000; }
   .tile svg { display: block; margin-top: 6px; }
   .tile.wide { grid-column: 1 / -1; padding: 6px 8px 0; max-width: 540px; }
-  @media (min-width: 1560px) { .tiles6 { grid-template-columns: repeat(6, 1fr); } }
-  @media (min-width: 900px) { .tiles4 { grid-template-columns: repeat(4, 1fr); } }
+  .tiles6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .tiles4 { grid-template-columns: repeat(4, 1fr); }
   .tiles6 > .tile { display: flex; flex-direction: column; }
   .tiles6 > .tile > svg { width: 100%; height: auto; } .tiles6 > .tile > svg.spk { height: 34px; }
   .tiles6 > .tile .asof { margin-top: auto; padding-top: 8px; }
   .watch .card.wide { grid-column: 1 / -1; }
-  @media (min-width: 1000px) { .watch3 { grid-template-columns: 1fr 1fr 1fr; } }
+  .watch3 { grid-template-columns: 1fr 1fr 1fr; }
   .watch3 > .card > svg { max-width: 100%; height: auto; }
-  @media (min-width: 1500px) { .real4 { grid-template-columns: repeat(4, 1fr); } }
-  @media (min-width: 1500px) { .watch3 { grid-template-columns: 280px 280px 380px 290px 280px; } }
-  @media (min-width: 900px) { .tile.wide { grid-column: span 2; grid-row: span 2; } }
+  .real4 { grid-template-columns: repeat(4, 1fr); }
+  .watch3 { grid-template-columns: 280px 280px 380px 290px 280px; }
+  .tile.wide { grid-column: span 2; grid-row: span 2; }
   .card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
   .card .note { font-size: 12.5px; color: #000; margin: 2px 0 8px; }
   .card .legend { color: #000; }
@@ -69,6 +69,7 @@
   .ix span { color: var(--muted); font-size: 12.5px; }
   a { color: #1a3a7a; }
 </style>
+<script>/* the page is laid out once, at a design width of 1700 px, and scaled to the window, so it looks the same on every monitor and on a phone (Jill, 14 Nov 2026). On a phone the viewport is already 1700 wide, so the scale is 1. */(function () { var D = 1700; function fit() { var w = document.documentElement.clientWidth || window.innerWidth; var z = w / D; if (z > 2) z = 2; document.documentElement.style.zoom = z; } fit(); window.addEventListener('resize', fit); })();</script>
 </head>
 <body>
 <nav class="pages"><a class="on" href="./">Economic Dashboard Main</a><a href="shorts.html">Shorts</a></nav>
@@ -535,7 +536,7 @@
     var tmr = new Date(nowD.getTime() + 864e5), tomS = tmr.getFullYear() + '-' + pad(tmr.getMonth() + 1) + '-' + pad(tmr.getDate());
     var up = RELEASES.filter(function (r) { return r.date === todayS; });
     navItems.push(['releases', 'Today\'s Reports']);
-    html += '<div style="display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-start"><div style="flex:0 0 auto"><h2 id="releases" style="margin:30px 0 8px">Today\'s Reports</h2><div class="grid" style="grid-auto-flow:column;grid-auto-columns:260px;gap:10px">';
+    html += '<div style="display:flex;flex-wrap:nowrap;gap:14px 24px;align-items:flex-start"><div style="flex:0 0 auto"><h2 id="releases" style="margin:30px 0 8px">Today\'s Reports</h2><div class="grid" style="grid-auto-flow:column;grid-auto-columns:260px;gap:10px">';
     if (!up.length) { html += '<div class="card" style="padding:6px 10px;font-size:13px;min-height:66px;display:flex;align-items:center;justify-content:center;text-align:center;border-color:#d9822b;border-width:2px">None</div>'; }
     up.forEach(function (r) {
       var tag = r.date === todayS ? 'TODAY' : (r.date === tomS ? 'TOMORROW' : '');
@@ -545,7 +546,7 @@
       var hot = tag ? ' border-color:#d9822b;border-width:2px;' : '';
       html += '<div class="card" style="padding:6px 10px;font-size:13px;line-height:1.3;' + hot + '"><b>' + (tag ? '<span style="color:#d9822b">' + tag + '</span> · ' : '') + esc(ds) + '</b><div>' + lk(r, esc(r.name.replace(/ \(.*\)/, ''))) + '</div><div class="src">' + t + '</div></div>';
     });
-    html += '</div></div><div style="flex:0 0 auto">';
+    html += '</div></div><div style="flex:1 1 0;min-width:0;overflow-x:auto">';
     var wk0 = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate() - ((nowD.getDay() + 6) % 7)), wk1 = new Date(wk0.getFullYear(), wk0.getMonth(), wk0.getDate() + 6);
     var dstr = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
     var wkItems = RELEASES.filter(function (r) { return r.date >= dstr(wk0) && r.date <= dstr(wk1) && r.date !== todayS; });
