@@ -567,7 +567,7 @@
   ['vix', 'real10', 't10', 'effr', 'mort30'].forEach(function (id) { var t = tileById(id); if (t) html += tileHTML(t); });
   html += ercotTile() + '</div>';
   html += '<div class="grid" style="margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))">' +
-    tvw({ name: 'Stocks, dollar and gold (live)', symbols: [{ name: 'AMEX:SPY', displayName: 'SPY' }, { name: 'FOREXCOM:NSXUSD', displayName: 'Nasdaq 100' }, { name: 'CAPITALCOM:DXY', displayName: 'US Dollar Index' }, { name: 'AMEX:GLD', displayName: 'Gold (GLD fund)' }] }) +
+    tvw({ name: 'Stocks, dollar and gold (live)', symbols: [{ name: 'AMEX:SPY', displayName: 'SPY' }, { name: 'FOREXCOM:NSXUSD', displayName: 'Nasdaq 100' }, { name: 'CAPITALCOM:DXY', displayName: 'US Dollar Index' }, { name: 'OANDA:XAUUSD', displayName: 'Gold (dollars per ounce)' }] }) +
     tvw({ name: 'Oil and natural gas (live)', symbols: [{ name: 'SKILLING:XTIUSD', displayName: 'WTI Crude' }, { name: 'OANDA:BCOUSD', displayName: 'Brent Crude' }, { name: 'SKILLING:NATGAS', displayName: 'NYMEX Nat Gas' }] }) +
     '</div>';
 
@@ -988,7 +988,7 @@
     'Michigan Consumer Sentiment': 'Coincident', 'Conference Board Consumer Confidence': 'Coincident', 'PCE (personal consumption expenditures)': 'Coincident', 'CPI (consumer price index)': 'Lagging', 'Retail sales': 'Coincident',
     'Nonfarm payrolls': 'Lagging', 'Unemployment rate (national)': 'Lagging', 'Houston unemployment rate': 'Lagging', 'JOLTS job openings': 'Leading', 'Initial jobless claims': 'Leading',
     'FOMC rate decisions': 'Leading', 'Fed funds rate (effective)': 'Leading', '10-year Treasury yield': 'Leading', '30-year mortgage rate': 'Leading', '10-year real yield': 'Leading',
-    'VIX': 'Leading', 'S&P 500 and Nasdaq': 'Leading', 'US dollar index': 'Coincident', 'Gold (GLD)': 'Coincident',
+    'VIX': 'Leading', 'S&P 500 and Nasdaq': 'Leading', 'US dollar index': 'Coincident', 'Gold': 'Coincident',
     'Conference Board Leading Economic Index': 'Leading', '10-year minus 2-year Treasury spread': 'Leading', 'CAPE (Shiller PE)': 'Leading',
     'ISM Manufacturing PMI': 'Leading', 'S&P Global US Manufacturing PMI': 'Leading', 'Dallas Fed Texas manufacturing production index': 'Leading',
     'WTI and Brent crude': 'Coincident', 'Natural gas': 'Coincident', 'ERCOT power price': 'Coincident', 'Baker Hughes rig counts, USA and Canada': 'Lagging',
