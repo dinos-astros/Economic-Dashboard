@@ -13,7 +13,7 @@ window.RELEASES = [
   { date: "2026-11-18", at: "07:30", ok: true,  name: "Housing starts and permits", src: "Census", url: "https://www.census.gov/construction/nrc/pdf/newresconst.pdf" },
   { date: "2026-11-18", at: "09:30", ok: true,  name: "EIA crude oil stocks", src: "EIA", url: "https://www.eia.gov/petroleum/supply/weekly/" },
   { date: "2026-11-19", at: "09:00", ok: true,  name: "Conference Board Leading Economic Index", src: "Conference Board", url: "https://www.conference-board.org/topics/us-leading-indicators" },
-  { date: "2026-11-20", at: "09:00", ok: false, name: "Michigan consumer sentiment (final)", src: "FRED", url: "https://www.sca.isr.umich.edu/" },
+  { date: "2026-11-20", at: "09:00", ok: true,  name: "Michigan consumer sentiment (final)", src: "University of Michigan", url: "https://www.sca.isr.umich.edu/" },
   { date: "2026-11-23", at: "08:45", ok: true,  name: "S&P Global flash US PMI", src: "S&P Global", url: "https://www.pmi.spglobal.com/Public/Release/PressReleases" },
   { date: "2026-11-25", at: "07:30", ok: true,  name: "PCE (personal spending)", src: "BEA", url: "https://www.bea.gov/data/income-saving/personal-income" },
   { date: "2026-11-25", at: "07:30", ok: true,  name: "GDP (second estimate)", src: "BEA", url: "https://www.bea.gov/data/gdp/gross-domestic-product" },

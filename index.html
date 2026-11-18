@@ -872,7 +872,8 @@
   function vacOf(c) { return (M.vacancy || []).filter(function (v) { return v.city === c; })[0]; }
   function latestOf(prefix, c) { var g = manual(prefix + ': ' + c); return g ? g.points[g.points.length - 1] : null; }
   function occCell(vac, moe) { return vac === null || vac === undefined ? 'n/a' : fmt(100 - vac, 1) + '%'; }
-  html += '<div class="card"><h3>Occupancy, Q3 2026</h3><div class="note">Low vacancy tends to push lease rates up, and high vacancy tends to bring discounts and free rent.</div><table><tr><th>City</th><th class="num">Apartments</th><th class="num">Office</th><th class="num">Retail</th></tr>';
+  var occQ = 'Q3 2026'; (function () { var o = latestOf('Office vacancy rate', 'Houston'), mm = o && String(o.d).match(/(\d{4})\D*Q(\d)/); if (mm) { occQ = 'Q' + mm[2] + ' ' + mm[1]; } else { var a = latestOf('Apartment vacancy rate', 'Houston'), am = a && String(a.d).match(/(\d{4})-(\d\d)/); if (am) { occQ = 'Q' + (Math.floor((parseInt(am[2], 10) - 1) / 3) + 1) + ' ' + am[1]; } } })();
+  html += '<div class="card"><h3>Occupancy, ' + occQ + '</h3><div class="note">Low vacancy tends to push lease rates up, and high vacancy tends to bring discounts and free rent.</div><table><tr><th>City</th><th class="num">Apartments</th><th class="num">Office</th><th class="num">Retail</th></tr>';
   cities.forEach(function (c) {
     var v = vacOf(c), q = v ? v.quarters[v.quarters.length - 1] : null, o = latestOf('Office vacancy rate', c), r = latestOf('Retail vacancy rate', c);
     html += '<tr><td>' + esc(c) + '</td><td class="num">' + (q ? occCell(q.vacancy, q.moe) : 'n/a') + '</td><td class="num">' + (o ? occCell(o.v) : 'n/a') + '</td><td class="num">' + (r ? occCell(r.v) : 'n/a') + '</td></tr>';
@@ -893,7 +894,7 @@
     var hMonth = esc(monthLabel(hz.d).replace('-', ' 20')), cz = hz.condo;
     var hBlock = function (name, value, chg, c) { return '<div style="margin-top:6px"><div style="font-size:12px;color:#000">' + name + '</div><div class="value" style="font-size:24px;margin:0">' + value + '</div><div class="chg ' + c + '" style="font-size:13px">' + chg + '</div></div>'; };
     var hTile = function (label, sf, co) { return '<div class="card tile"><div class="label">' + esc(label) + '</div>' + sf + (co || '') + '<div class="asof">' + hMonth + '</div></div>'; };
-    var mchg = hpct(hz.median, hz.medianYago), cmchg = cz ? cz.medianYoy : 0, yago = ' YoY';
+    var mchg = (hz.medianYoy !== undefined ? hz.medianYoy : hpct(hz.median, hz.medianYago)), cmchg = cz ? cz.medianYoy : 0, yago = ' YoY';
     html += '<div class="grid tiles tiles4">' +
       hTile('Median price', hBlock('Single-family', '$' + fmt(hz.median, 0), signed(mchg, 1) + '%' + yago, hcls(mchg)), cz ? hBlock('Townhomes and condos', '$' + fmt(cz.median, 0), signed(cz.medianYoy, 1) + '%' + yago, hcls(cz.medianYoy)) : '') +
       hTile('Homes for sale', hBlock('Single-family', fmt(hz.listings, 0), signed(hz.listingsYoy, 1) + '%' + yago, hcls(hz.listingsYoy)), cz ? hBlock('Townhomes and condos', fmt(cz.listings, 0), signed(cz.listingsYoy, 1) + '%' + yago, hcls(cz.listingsYoy)) : '') +
