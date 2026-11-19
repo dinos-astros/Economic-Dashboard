@@ -3,6 +3,7 @@
 // ISM release calendar, S&P Global PMI calendar, EIA Weekly Petroleum Status Report schedule (eia.gov/petroleum/supply/weekly/schedule.php: Wednesdays 10:30 AM ET = 9:30 CT, except holiday weeks), University of Michigan site, Conference Board LEI release, Federal Reserve statements.
 // at = Central time, 24h. ok = true when the hour was read from the source. Not yet verified: jobless claims hour, Michigan final date/hour, Dallas Fed Texas Manufacturing date.
 window.RELEASES = [
+  { date: "2026-11-04", at: "09:30", ok: true,  name: "EIA crude oil stocks", src: "EIA", url: "https://www.eia.gov/petroleum/supply/weekly/" },
   { date: "2026-11-06", at: "07:30", ok: true,  name: "Jobs report (payrolls, unemployment)", src: "BLS", url: "https://www.bls.gov/news.release/empsit.nr0.htm" },
   { date: "2026-11-06", at: "09:00", ok: true,  name: "Michigan consumer sentiment (preliminary)", src: "University of Michigan", url: "https://www.sca.isr.umich.edu/" },
   { date: "2026-11-10", at: "07:30", ok: true,  name: "CPI (consumer prices)", src: "BLS", url: "https://www.bls.gov/news.release/cpi.htm" },
