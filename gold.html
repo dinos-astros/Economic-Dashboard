@@ -177,7 +177,7 @@ function lineChart(sym){
 function pct(v){return (v>=0?'+':'')+v.toFixed(1)+'%'}
 function etfStats(t){var y=GOLD_ETF.etf[t],n=y.length,d=GOLD_ETF.div[t],r1=(y[n-1]/y[n-5]-1)*100,r12=(y[n-1]/y[0]-1)*100,dv=d.n?((d.sum/y[n-1]*100).toFixed(2)+'% ('+d.n+(d.n===1?' payment':' payments')+' in 12 months)'):'none';
  return '<div class="note" style="margin-top:6px">Expense ratio: <b>'+ER[t]+'</b><br>1-year return: <b>'+pct(r12)+'</b><br>3-year return: <b>'+pct(GOLD_ETF.r3[t].ret)+'</b><br>Options available: <b>'+(GOLD_ETF.opt&&GOLD_ETF.opt[t]===1?'Yes':(GOLD_ETF.opt&&GOLD_ETF.opt[t]===0?'No':'Not checked'))+'</b></div>'}function etfGrid(list,el){var h='';list.forEach(function(t){h+='<div class="card"><h3>'+t+'</h3><div class="note">'+ETFNAME[t]+'</div>'+lineChart(t)+etfStats(t)+'</div>'});document.getElementById(el).innerHTML=h}
-etfGrid(['IAU','GLDM','IAUM','AAAU','BAR','GLD','PHYS'],'e1');
+etfGrid(['IAU','GLDM','IAUM','AAAU','GLD'],'e1');
 etfGrid(['GDX','GDXJ','RING','SGDM','GOAU'],'e2');document.getElementById('etfasof').innerHTML=asOfHtml('ETF data',GOLD_ETF.asOf);
 function asOfHtml(lab,a){if(!a)return '';var d=new Date(a.replace(' ','T')),M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],h=d.getHours(),ap=h>=12?'PM':'AM',hh=h%12||12,mm=('0'+d.getMinutes()).slice(-2),txt=d.getDate()+' '+M[d.getMonth()]+' '+d.getFullYear()+' '+hh+':'+mm+' '+ap,days=(Date.now()-d.getTime())/86400000;
  if(days>3)return '<b style="color:#c0392b">'+lab+' NOT UPDATED since '+txt+'</b>';return lab+' as of '+txt}function goldChart20(){
