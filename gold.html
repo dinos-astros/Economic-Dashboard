@@ -32,8 +32,8 @@
   th { font-weight: 650; font-size: 12.5px; }
   svg text { font-family: "Segoe UI", system-ui, sans-serif; }
 </style>
-<script src="gold-spot.js"></script>
-<script src="gold-etf.js"></script>
+<script>document.write('<script src="gold-spot.js'+(location.protocol==='file:'?'':'?v='+Date.now())+'"><\/script>')</script>
+<script>document.write('<script src="gold-etf.js'+(location.protocol==='file:'?'':'?v='+Date.now())+'"><\/script>')</script>
 <script>(function () { var D = 1700; function fit() { var w = document.documentElement.clientWidth || window.innerWidth; var z = w / D; if (z > 2) z = 2; document.documentElement.style.zoom = z; } fit(); window.addEventListener('resize', fit); })();</script>
 </head>
 <body>
