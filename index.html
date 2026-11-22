@@ -31,14 +31,21 @@
   .tile .chg { font-size: 14px; font-weight: 600; }
   .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--muted); }
   .tile .asof { font-size: 12px; color: #000; margin-top: 4px; }
+  .tile .tdef { font-size: 11.5px; color: #000; margin-top: 4px; line-height: 1.25; }
   .tile .flat { color: #000; }
   .tile svg { display: block; margin-top: 6px; }
   .tile.wide { grid-column: 1 / -1; padding: 6px 8px 0; max-width: 540px; }
-  .tiles6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .tiles6 { grid-template-columns: repeat(8, minmax(0, 1fr)); align-items: stretch; gap: 10px; }
   .tiles4 { grid-template-columns: repeat(4, 1fr); }
-  .tiles6 > .tile { display: flex; flex-direction: column; }
-  .tiles6 > .tile > svg { width: 100%; height: auto; } .tiles6 > .tile > svg.spk { height: 34px; }
-  .tiles6 > .tile .asof { margin-top: auto; padding-top: 8px; }
+  .tiles6 > .tile { display: flex; flex-direction: column; padding: 12px 10px; }
+  .tiles6 > .tile .chg { font-size: 12px; white-space: normal; }
+  @media (max-width: 1500px) { .tiles6 > .tile .asof { white-space: normal; } }
+  .tiles6 > .tile { padding: 12px 8px; }
+  .tiles6 > .tile .value { font-size: 25px; }
+  .tiles6 > .tile > svg { width: 100%; height: auto; } .tiles6 > .tile > svg.spk { height: 26px; }
+  .tiles6 > .tile .asof { margin-top: auto; padding-top: 8px; white-space: nowrap; font-size: 11px; }
+  @media (max-width: 1500px) { .tiles6 > .tile .asof { white-space: normal; } }
+  @media (max-width: 1150px) { .tiles6 { grid-template-columns: repeat(8, 175px); overflow-x: auto; padding-bottom: 8px; } }
   .watch .card.wide { grid-column: 1 / -1; }
   .watch3 { grid-template-columns: 1fr 1fr 1fr; }
   .watch3 > .card > svg { max-width: 100%; height: auto; }
@@ -115,12 +122,13 @@
   document.getElementById('stamp').textContent = 'Daily data refreshed ' + DATA.generated + (M.generated ? '. Slower data refreshed ' + M.generated : '') + ' (Central).';
 
   /* ---------- small drawing helpers ---------- */
-  function spark(vals, w, h) {
+  function spark(vals, w, h, ex) {
     w = w || 190; h = h || 34;
     var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
     if (max === min) { max += 1; min -= 1; }
     var pts = vals.map(function (v, i) { return (i / Math.max(1, vals.length - 1) * w).toFixed(1) + ',' + (h - 3 - (v - min) / (max - min) * (h - 6)).toFixed(1); }).join(' ');
-    return '<svg class="spk" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><polyline fill="none" stroke="#1a3a7a" stroke-width="1.6" vector-effect="non-scaling-stroke" points="' + pts + '"/></svg>';
+    var hov = (ex && ex.d && ex.d.length === vals.length) ? ' data-v="' + vals.join(',') + '" data-d="' + ex.d.join(',') + '" data-dec="' + (ex.dec == null ? 2 : ex.dec) + '" data-u="' + (ex.u || '') + '" data-w="' + w + '" data-h="' + h + '" data-min="' + min + '" data-max="' + max + '" style="cursor:crosshair"' : '';
+    return '<svg class="spk" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"' + hov + '><polyline fill="none" stroke="#1a3a7a" stroke-width="1.6" vector-effect="non-scaling-stroke" points="' + pts + '"/><line class="spkline" x1="-9" x2="-9" y1="0" y2="' + h + '" stroke="#c0392b" stroke-width="1" vector-effect="non-scaling-stroke" style="display:none"/></svg>';
   }
   function change(vals, lag, kind) {
     return vals.map(function (v, i) {
@@ -238,7 +246,12 @@
     });
     if (o.endLabels) lines.forEach(function (ln, k) { var li = -1; ln.vals.forEach(function (v, i) { if (v !== null) li = i; }); if (li < 0) return; out += '<text x="' + (L + li * step + step / 2 + 8).toFixed(1) + '" y="' + (y(ln.vals[li]) + 4).toFixed(1) + '" font-size="10.5" fill="#000" font-weight="600">' + esc(o.endLabels[k]) + '</text>'; });
     if (o.leftTitle) out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text>';
-    return out + xLabels(labels, W, L, step, o.every || Math.max(1, Math.round(labels.length / 8)), H - 170) + '</svg>';
+    var resSvg = out + xLabels(labels, W, L, step, o.every || Math.max(1, Math.round(labels.length / 8)), H - 170);
+    if (o.hover) {
+      var hv = lines.map(function (ln) { return ln.vals.map(function (v) { return v === null ? 'n' : v; }).join(','); }).join(';');
+      resSvg += '<rect class="lcov" x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent" style="cursor:crosshair;touch-action:none" data-lb="' + labels.join('|') + '" data-n="' + lines.map(function (ln) { return ln.name || ''; }).join('|') + '" data-c="' + lines.map(function (ln) { return ln.color; }).join('|') + '" data-v="' + hv + '" data-dec="' + (o.hdec !== undefined ? o.hdec : (o.dec || 0)) + '" data-g="' + [W, H, L, T, ph, step, a.min, a.max].join(',') + '"/>';
+    }
+    return resSvg + '</svg>';
   }
   /* actual numbers as a line on the left axis, the change from last month as bars on the right axis, one plot */
   function levelChange(labels, vals, bars, o) {
@@ -288,12 +301,28 @@
   }
 
   /* ---------- daily tiles ---------- */
+  var TILE_DEFS = {
+    prime: 'Set by banks for business loans.',
+    t3m: '3-month bill rate, typically the risk-free rate proxy.',
+    real10: '10-year real rate, key driver of the gold price, the opportunity cost of owning gold, which has no cash flows.',
+    t10: '10-year bond rate, a proxy for the discount rate. The higher it is, the lower the present value of stocks, all else equal.',
+    effr: 'The Fed sets the rate and buys/sells securities (overnight operations), which manage the money supply.',
+    mort30: 'Average 30-year home loan rate.'
+  };
   function tileHTML(t) {
     var d = t.value - t.prev, cls = d > 0 ? 'up' : d < 0 ? 'down' : 'flat', arrow = d > 0 ? '▲' : d < 0 ? '▼' : '▬', isRate = t.unit === '%', chg;
-    var per = /weekly/i.test(t.window || '') ? ' WoW' : ''; if (isRate) { chg = arrow + ' ' + signed(d, 2) + ' points (' + signed(Math.round(d * 100), 0) + '\u00a0bps)' + per; }
+    var per = (t.id === 'mort30' || /weekly/i.test(t.window || '')) ? ' WoW' : ''; if (isRate) { chg = arrow + ' ' + signed(d, 2) + ' points (' + signed(Math.round(d * 100), 0) + '\u00a0bps)' + per; }
     else { var pct = t.prev ? d / t.prev * 100 : 0, dol = t.unit === '$' ? '$' : ''; chg = arrow + ' ' + (d > 0 ? '+' : d < 0 ? '-' : '') + dol + fmt(Math.abs(d), t.decimals) + ' (' + signed(pct, 2) + '%)' + per; }
     var val = (t.unit === '$' ? '$' : '') + fmt(t.value, t.decimals) + (isRate ? '%' : '');
-    return '<div class="card tile" title="' + esc(t.note || '') + ' Source: ' + esc(t.source) + '"><div class="label">' + esc(t.label) + '</div><div class="value">' + val + '</div><div class="chg ' + cls + '">' + chg + '</div>' + spark(t.spark) + (t.range ? rangeBar(t) : '') + '<div class="asof">' + (t.window ? 'Line: ' + esc(t.window) + '<br>' : '') + 'Updated ' + dateLabel(t.asOf) + (t.asOfTime ? ' ' + esc(t.asOfTime) + ' Central' : '') + '</div></div>';
+    if (t.id === 'vix') {
+      var vw = 190, vg = function (x) { return Math.max(0, Math.min(vw, x / 50 * vw)); }, vv = t.value, vlvl = vv >= 35 ? 2 : (vv >= 20 ? 1 : 0), vcol = ['#1a7f4b', '#c26a0a', '#c0392b'][vlvl], vname = ['Under 20: typical', 'Over 20: elevated volatility', 'Sell off'][vlvl];
+      return '<div class="card tile" title="' + esc(t.source) + '"><div class="label" style="display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline"><a href="https://fred.stlouisfed.org/series/VIXCLS" target="_blank" rel="noopener" style="color:#1a3a7a;text-decoration:underline">VIX</a><span style="font-size:14px;font-weight:700;color:' + vcol + '">' + vname + '</span></div><div class="value" style="color:' + vcol + '">' + fmt(vv, 2) + '</div><div class="chg ' + cls + '">' + chg + '</div>' +
+        '<svg width="' + (vw + 20) + '" height="44" viewBox="-10 6 ' + (vw + 20) + ' 44"><rect x="0" y="16" width="' + vg(20) + '" height="10" fill="#d4ebdc"/><rect x="' + vg(20) + '" y="16" width="' + (vg(35) - vg(20)) + '" height="10" fill="#f6e3c4"/><rect x="' + vg(35) + '" y="16" width="' + (vw - vg(35)) + '" height="10" fill="#f3d3cf"/>' +
+        '<line x1="' + vg(20) + '" y1="10" x2="' + vg(20) + '" y2="32" stroke="#1c2430" stroke-width="2"/><line x1="' + vg(35) + '" y1="10" x2="' + vg(35) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + vg(vv) + '" cy="21" r="7" fill="' + vcol + '" stroke="#fff" stroke-width="2"/>' +
+        '<text x="0" y="46" font-size="11" fill="#6b7686">0</text><text x="' + vg(20) + '" y="46" font-size="11" fill="#6b7686" text-anchor="middle">20</text><text x="' + vg(35) + '" y="46" font-size="11" fill="#6b7686" text-anchor="middle">35</text><text x="' + vw + '" y="46" font-size="11" fill="#6b7686" text-anchor="end">50</text></svg>' +
+        spark(t.spark, 0, 0, { d: t.sd, dec: t.decimals, u: t.unit === '%' ? '%' : '' }) + '<div class="tdef">Options pricing elevated at &gt;=20</div><div class="asof">' + 'Updated ' + (t.id === 'real10' ? new Date(t.asOf + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : dateLabel(t.asOf)).replace(/,/g, '') + (t.window ? ' &middot; ' + esc(t.window).replace(/,/g, '') : '') + '</div></div>';
+    }
+    return '<div class="card tile" title="' + esc(TILE_DEFS[t.id] || t.note || '') + ' Source: ' + esc(t.source) + '"><div class="label">' + esc(t.label) + '</div><div class="value">' + val + '</div>' + (t.id === 'prime' ? '' : '<div class="chg ' + cls + '">' + chg + '</div>') + (t.id === 'prime' ? '' : spark(t.spark, 0, 0, { d: t.sd, dec: t.decimals, u: t.unit === '%' ? '%' : '' })) + (t.range && t.id !== 'vix' ? rangeBar(t) : '') + (TILE_DEFS[t.id] ? '<div class="tdef">' + esc(TILE_DEFS[t.id]) + '</div>' : '') + '<div class="asof">' + 'Updated ' + (t.id === 'real10' ? new Date(t.asOf + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : dateLabel(t.asOf)).replace(/,/g, '') + (t.window ? ' &middot; ' + esc(t.window).replace(/,/g, '') : '') + (t.asOfTime ? ' ' + esc(t.asOfTime) + ' Central' : '') + '</div></div>';
   }
   function tileById(id) { return DATA.tiles.filter(function (t) { return t.id === id; })[0]; }
   function ercotTile() {
@@ -564,11 +593,11 @@
   var tvw = function (grp) { return '<div class="card tile" style="padding:6px 8px 0"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>' +
     '<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>' + JSON.stringify({ width: '100%', height: 215, symbolsGroups: [grp], showSymbolLogo: false, colorTheme: 'light', isTransparent: false, locale: 'en' }) + '<\/script></div></div>'; };
   html += '<div class="grid tiles tiles6">';
-  ['vix', 'real10', 't10', 'effr', 'mort30'].forEach(function (id) { var t = tileById(id); if (t) html += tileHTML(t); });
+  ['vix', 'prime', 't3m', 't10', 'real10', 'effr', 'mort30'].forEach(function (id) { var t = tileById(id); if (t) html += tileHTML(t); });
   html += ercotTile() + '</div>';
   html += '<div class="grid" style="margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))">' +
     tvw({ name: 'Stocks, dollar and gold (live)', symbols: [{ name: 'AMEX:SPY', displayName: 'SPY' }, { name: 'FOREXCOM:NSXUSD', displayName: 'Nasdaq 100' }, { name: 'CAPITALCOM:DXY', displayName: 'US Dollar Index' }, { name: 'OANDA:XAUUSD', displayName: 'Gold (dollars per ounce)' }] }) +
-    tvw({ name: 'Oil and natural gas (live)', symbols: [{ name: 'SKILLING:XTIUSD', displayName: 'WTI Crude' }, { name: 'OANDA:BCOUSD', displayName: 'Brent Crude' }, { name: 'SKILLING:NATGAS', displayName: 'NYMEX Nat Gas' }] }) +
+    tvw({ name: 'Oil and natural gas (live)', symbols: [{ name: 'SKILLING:XTIUSD', displayName: 'WTI Crude' }, { name: 'OANDA:BCOUSD', displayName: 'Brent Crude' }, { name: 'SKILLING:NATGAS', displayName: 'Henry Hub Nat Gas' }] }) +
     '</div>';
 
   /* ---------- Daily Market Check: SPY and QQQ daily closes with the 20, 50 and 200 MA (market.js, completed days only). A visual check: the page shows the charts and Jill's rules, it does not call bull or bear. ---------- */
@@ -576,6 +605,11 @@
     section('market', TITLES.market, '');
     var DISP = 63; /* trading days drawn on the charts (3 months); market.js carries 29 more so the 30-day checks can be made for the first drawn day */
     /* the call for any one day t (an index into market.js), by her rules; SPY and QQQ must both meet a rule. Used to colour the Market and Trend bands on the charts. */
+    /* Jill's added rules (22 Nov 2026), SPY and QQQ are each judged on their own: Pullback = closed 5% or more below their highest close of the last 30 days (less than 10%); Correction = both 10% or more below; Sell off = that index closed down 4% or more from the previous close, judged for SPY and QQQ separately. Shown on the top row only while they hold. */
+    var ddOf = function (s) { var c = MARKET[s].c, n = c.length, mx = 0, i; for (i = n - 30; i < n; i++) if (c[i] > mx) mx = c[i]; return (c[n - 1] / mx - 1) * 100; };
+    var dayOf = function (s) { var c = MARKET[s].c, n = c.length; return (c[n - 1] / c[n - 2] - 1) * 100; };
+    var pct1 = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1) + '%'; }, pct2 = function (x) { return (x > 0 ? '+' : '') + x.toFixed(2) + '%'; };
+    var xrow = function (name, need, fn) { var a = fn('SPY'), b = fn('QQQ'); return '<tr><td style="white-space:nowrap;font-weight:600">' + name + '</td><td>' + pct1(ddOf('SPY')) + ' from the 30-day high close (' + need + ')</td><td>' + pct1(ddOf('QQQ')) + ' from the 30-day high close (' + need + ')</td><td style="white-space:nowrap">SPY ' + (a ? 'Yes' : 'No') + ', QQQ ' + (b ? 'Yes' : 'No') + '</td></tr>'; };
     var dayCall = function (t) {
       var r = {};
       ['SPY', 'QQQ'].forEach(function (s) {
@@ -638,7 +672,7 @@
         out += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" font-size="13" fill="' + INK + '" text-anchor="middle">' + dayLabel(m.d[i]) + ((firstLabel || (mo === 1 && +m.d[i].slice(8, 10) <= 7)) ? ', ' + m.d[i].slice(0, 4) : '') + '</text>'; firstLabel = false;
       }
       out += '<text transform="rotate(90 ' + (W - 6) + ' ' + (T + PH / 2) + ')" x="' + (W - 6) + '" y="' + (T + PH / 2) + '" font-size="12" fill="#000" text-anchor="middle">Price (dollars)</text></svg>';
-      return '<div class="card"><h3 style="display:flex;flex-wrap:wrap;gap:4px 34px;align-items:baseline"><span class="ttl">' + s + '</span><span style="color:#000">Market: <span style="color:' + (COLS[mWord] || INK) + '">' + mWord + '</span></span><span style="color:#000">Trend: <span style="color:' + (COLS[tWord] || INK) + '">' + (tWord === 'Trending up' ? 'Up' : 'Down') + '</span></span></h3>' + out + legend([['#d9822b', '20 MA', 'line'], ['#1a3a7a', '50 MA', 'line'], ['#7b3fa0', '200 MA', 'line'], ['#c0399a', 'Highs trendline', 'dash'], ['#0f8aa8', 'Lows trendline', 'dash']]) + '</div>';
+      return '<div class="card"><h3 style="display:flex;flex-wrap:wrap;gap:4px 34px;align-items:baseline"><span class="ttl">' + s + '</span><span style="color:#000">Market: <span style="color:' + (COLS[mWord] || INK) + '">' + mWord + '</span></span><span style="color:#000">Trend: <span style="color:' + (COLS[tWord] || INK) + '">' + (tWord === 'Trending up' ? 'Up' : 'Down') + '</span></span>' + (ddOf(s) <= -10 ? '<span style="color:#000">Correction: <span style="color:#c0392b">' + pct1(ddOf(s)) + '</span></span>' : (ddOf(s) <= -5 ? '<span style="color:#000">Pullback: <span style="color:#c26a0a">' + pct1(ddOf(s)) + '</span></span>' : '')) + (dayOf(s) <= -4 ? '<span style="color:#000">Sell off: <span style="color:#c0392b">' + pct2(dayOf(s)) + '</span></span>' : '') + '</h3>' + out + legend([['#d9822b', '20 MA', 'line'], ['#1a3a7a', '50 MA', 'line'], ['#7b3fa0', '200 MA', 'line'], ['#c0399a', 'Highs trendline', 'dash'], ['#0f8aa8', 'Lows trendline', 'dash']]) + '</div>';
     };
     /* the call, from Jill's rules only, over the 30 days shown: sloping up = the MA line trends up over the 30 days, sloping down = trends down (the best-fit straight line through the 30 points; "over time it is moving up", her word); flat = within 2% either way; "most of the time" above the 50 MA = 70% of the 30 days (21 of 30). Both SPY and QQQ must meet a rule. */
     var mk = {}, pc = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1) + '%'; };
@@ -660,6 +694,9 @@
       mrow('Range bound', 'Not a bull market and not a bear market; price ' + pc(mk.SPY.p50) + ' from the 50 MA', 'Not a bull market and not a bear market; price ' + pc(mk.QQQ.p50) + ' from the 50 MA', isRange) +
       mrow('Trending up', trDesc(trS), trDesc(trQ), isUp) +
       mrow('Trending down', trDesc(trS), trDesc(trQ), isDown) +
+      xrow('Pullback', 'needs -5% to under -10%', function (s) { var d = ddOf(s); return d <= -5 && d > -10; }) +
+      xrow('Correction', 'needs -10% or worse', function (s) { return ddOf(s) <= -10; }) +
+      '<tr><td style="white-space:nowrap;font-weight:600">Sell off</td><td>' + pct2(dayOf('SPY')) + ' from the previous close (needs -4% or worse)</td><td>' + pct2(dayOf('QQQ')) + ' from the previous close (needs -4% or worse)</td><td style="white-space:nowrap">SPY ' + (dayOf('SPY') <= -4 ? 'Yes' : 'No') + ', QQQ ' + (dayOf('QQQ') <= -4 ? 'Yes' : 'No') + '</td></tr>' +
       '</table></details>';
     html += '<div class="grid charts" style="grid-template-columns:repeat(auto-fit,minmax(min(560px,100%),1fr))">' + marketCard('SPY') + marketCard('QQQ') + '</div>';
     html += callTable;
@@ -673,6 +710,9 @@
       ['Chop around the 50 MA', 'If both SPY and QQQ chop around the 50 MA, reduce position size, tighten your time horizon, and expect fakeouts.'],
       ['Trending up', 'Higher highs and higher lows. On the chart, the line along the swing highs and the line along the swing lows both rise.'],
       ['Trending down', 'Lower highs and lower lows. On the chart, the line along the swing highs and the line along the swing lows both fall.'],
+      ['Pullback', 'SPY or QQQ closed 5% or more, but less than 10%, below its highest close of the last 30 trading days. Each is judged on its own, so one can be in a pullback and the other not. It shows on the top row of that chart only while it lasts. A pullback can happen inside a bull market.'],
+      ['Correction', 'SPY or QQQ closed 10% or more below its highest close of the last 30 trading days. Each is judged on its own. It shows on the top row of that chart only while it lasts, in place of Pullback.'],
+      ['Sell off', 'SPY or QQQ closed down 4% or more from the previous close. Each is judged on its own, so one can have a sell off and the other not. It shows on the top row of that chart, with the percentage in red, only on a day it happens.'],
       ['Chop', 'Over the last 20 to 30 candles, price whipsaws and the MAs flatten. Reduce trading size.']
     ];
 
@@ -788,10 +828,10 @@
     var months = {}; [ism, spg].forEach(function (g) { if (g) g.points.forEach(function (p) { months[p.d] = true; }); });
     var ml = Object.keys(months).sort(), look = function (g) { return ml.map(function (m) { var f = g ? g.points.filter(function (p) { return p.d === m; })[0] : null; return f ? f.v : null; }); };
     var last = function (g) { var p = g.points[g.points.length - 1]; return monthLabel(p.d) + ' ' + fmt(p.v, 1); };
-    html += card('Manufacturing PMIs', 'PMIs: above 50 means manufacturing is growing overall (orders, production, hiring)', lineChart(ml.map(monthLabel), [{ vals: look(ism), color: '#1a3a7a', name: 'ISM' }, { vals: look(spg), color: '#d9822b', name: 'S&P Global' }], { ref: 50, refLabel: '50', dec: 0, leftTitle: 'Index' }), legend([['#1a3a7a', 'ISM Manufacturing PMI', 'line'], ['#d9822b', 'S&P Global US Manufacturing PMI', 'line']]));
+    html += card('Manufacturing PMIs: ' + (ism ? monthLabel(ism.points[ism.points.length - 1].d).slice(0, 3) + ' ISM ' + fmt(ism.points[ism.points.length - 1].v, 1) : '') + (ism && spg ? ' and ' : '') + (spg ? monthLabel(spg.points[spg.points.length - 1].d).slice(0, 3) + ' S&P Global ' + fmt(spg.points[spg.points.length - 1].v, 1) : ''), 'PMIs: above 50 means manufacturing is growing overall (orders, production, hiring)', lineChart(ml.map(monthLabel), [{ vals: look(ism), color: '#1a3a7a', name: 'ISM' }, { vals: look(spg), color: '#d9822b', name: 'S&P Global' }], { ref: 50, refLabel: '50', dec: 0, leftTitle: 'Index', hover: true, hdec: 1 }), legend([['#1a3a7a', 'ISM Manufacturing PMI', 'line'], ['#d9822b', 'S&P Global US Manufacturing PMI', 'line']]));
   }
   var tm = mseries('tmos');
-  if (tm) { var tA = arr(tm.points), tl = tA.labels.map(monthLabel), tlast = tA.vals.length - 1; html += card('Texas manufacturing', 'Dallas Fed: above 0 means Texas production is growing.', lineChart(tl, [{ vals: tA.vals, color: '#1a3a7a' }], { ref: 0, refLabel: '0', dec: 0, leftTitle: 'Index' })); }
+  if (tm) { var tA = arr(tm.points), tl = tA.labels.map(monthLabel), tlast = tA.vals.length - 1; html += card('Texas manufacturing: ' + tl[tlast].slice(0, 3) + ' ' + fmt(tA.vals[tlast], 1), 'Dallas Fed: above 0 means Texas production is growing.', lineChart(tl, [{ vals: tA.vals, color: '#1a3a7a', name: 'Production index' }], { ref: 0, refLabel: '0', dec: 0, leftTitle: 'Index', hover: true, hdec: 1 })); }
   html += '</div>';
 
   /* ---------- Jobs and prices ---------- */
@@ -987,7 +1027,7 @@
   var TIMING = {
     'Michigan Consumer Sentiment': 'Coincident', 'Conference Board Consumer Confidence': 'Coincident', 'PCE (personal consumption expenditures)': 'Coincident', 'CPI (consumer price index)': 'Lagging', 'Retail sales': 'Coincident',
     'Nonfarm payrolls': 'Lagging', 'Unemployment rate (national)': 'Lagging', 'Houston unemployment rate': 'Lagging', 'JOLTS job openings': 'Leading', 'Initial jobless claims': 'Leading',
-    'FOMC rate decisions': 'Leading', 'Fed funds rate (effective)': 'Leading', '10-year Treasury yield': 'Leading', '30-year mortgage rate': 'Leading', '10-year real yield': 'Leading',
+    'FOMC rate decisions': 'Leading', 'Fed funds rate (effective)': 'Leading', '10-year Treasury yield': 'Leading', '30-year mortgage rate': 'Leading', 'Prime rate': 'Leading',
     'VIX': 'Leading', 'S&P 500 and Nasdaq': 'Leading', 'US dollar index': 'Coincident', 'Gold': 'Coincident',
     'Conference Board Leading Economic Index': 'Leading', '10-year minus 2-year Treasury spread': 'Leading', 'CAPE (Shiller PE)': 'Leading',
     'ISM Manufacturing PMI': 'Leading', 'S&P Global US Manufacturing PMI': 'Leading', 'Dallas Fed Texas manufacturing production index': 'Leading',
@@ -1046,7 +1086,7 @@
       while ((n = w.nextNode())) { var s = n.nodeValue.trim(); if (LEGEND_LINKS[s] && !n.parentNode.closest('a') && !n.parentNode.closest('h3') && !n.parentNode.closest('svg')) hit.push([n, s]); }
       hit.forEach(function (p) { var a = document.createElement('a'); a.href = LEGEND_LINKS[p[1]]; a.target = '_blank'; a.rel = 'noopener'; a.style.cssText = STYLE; a.textContent = p[0].nodeValue; p[0].parentNode.replaceChild(a, p[0]); });
     });
-    var TILE_LINKS = { 'VIX': F + 'VIXCLS', '10-year real yield': F + 'DFII10', '10-year Treasury yield': F + 'DGS10', 'Fed funds rate (effective)': F + 'DFF', '30-year mortgage rate': F + 'MORTGAGE30US', 'ERCOT Texas power price': 'https://www.ercot.com/content/cdr/html/real_time_spp.html' };
+    var TILE_LINKS = { 'VIX': F + 'VIXCLS', 'Prime rate': 'https://fred.stlouisfed.org/series/DPRIME', '3-month Treasury bill rate': 'https://fred.stlouisfed.org/series/DGS3MO', '10-year real interest rate': 'https://fred.stlouisfed.org/series/REAINTRATREARAT10Y', '10-year Treasury yield': F + 'DGS10', 'Fed funds rate (effective)': F + 'DFF', '30-year mortgage rate': F + 'MORTGAGE30US', 'ERCOT Texas power price': 'https://www.ercot.com/content/cdr/html/real_time_spp.html' };
     main.querySelectorAll('.tiles6 > .tile > .label:first-child').forEach(function (l) { var u = TILE_LINKS[l.textContent.trim()]; if (u && !l.querySelector('a')) wrap(l, u); });
     var hh = Array.prototype.filter.call(main.querySelectorAll('h2'), function (x) { return x.textContent.indexOf(TITLES.houston) === 0; })[0];
     var grid = hh && hh.nextElementSibling;
@@ -1063,6 +1103,49 @@
 
   /* TradingView needs its script re-created to run when inserted with innerHTML */
   main.querySelectorAll('.tradingview-widget-container').forEach(function (holder) { var old = holder.querySelector('script'), neu = document.createElement('script'); neu.src = old.src; neu.async = true; neu.text = old.text; holder.replaceChild(neu, old); });
+})();
+</script>
+<script>
+/* hover on a tile sparkline: shows the date and the value under the pointer */
+(function () {
+  var tip = null;
+  function mk() { tip = document.createElement('div'); tip.style.cssText = 'position:fixed;z-index:9999;background:#1c2430;color:#fff;font:600 12px/1.3 system-ui,Segoe UI,Arial;padding:5px 8px;border-radius:5px;pointer-events:none;display:none;white-space:nowrap'; document.body.appendChild(tip); }
+  function lbl(d) { var x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).replace(',', ''); }
+  document.addEventListener('mousemove', function (e) {
+    var s = e.target && e.target.closest ? e.target.closest('svg.spk[data-v]') : null;
+    if (!s) { if (tip) tip.style.display = 'none'; document.querySelectorAll('svg.spk .spkline').forEach(function (l) { l.style.display = 'none'; }); return; }
+    if (!tip) mk();
+    var v = s.getAttribute('data-v').split(','), d = s.getAttribute('data-d').split(','), r = s.getBoundingClientRect(), w = +s.getAttribute('data-w');
+    var i = Math.max(0, Math.min(v.length - 1, Math.round((e.clientX - r.left) / r.width * (v.length - 1))));
+    var line = s.querySelector('.spkline'); if (line) { var x = i / Math.max(1, v.length - 1) * w; line.setAttribute('x1', x); line.setAttribute('x2', x); line.style.display = ''; }
+    tip.textContent = lbl(d[i]) + ':  ' + (+v[i]).toFixed(+s.getAttribute('data-dec')) + s.getAttribute('data-u');
+    tip.style.display = 'block'; tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, e.clientX + 12) + 'px'; tip.style.top = (e.clientY - 34) + 'px';
+  });
+})();
+</script>
+<script>
+/* hover on monthly line charts that ask for it: shows the month and the value of each line */
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(n, a) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); return e; }
+  function hideL() { document.querySelectorAll('.lch').forEach(function (g) { g.style.display = 'none'; }); }
+  function mvL(ev) {
+    var o = ev.target; if (!o.classList || !o.classList.contains('lcov')) { hideL(); return; }
+    var sv = o.ownerSVGElement, b = sv.getBoundingClientRect(), g = o.getAttribute('data-g').split(',').map(Number), W = g[0], L = g[2], T = g[3], ph = g[4], step = g[5], mn = g[6], mx = g[7];
+    var lb = o.getAttribute('data-lb').split('|'), nm = o.getAttribute('data-n').split('|'), co = o.getAttribute('data-c').split('|'), dec = +o.getAttribute('data-dec');
+    var vs = o.getAttribute('data-v').split(';').map(function (s) { return s.split(',').map(function (x) { return x === 'n' ? null : +x; }); });
+    var x = (ev.clientX - b.left) * W / b.width, i = Math.max(0, Math.min(lb.length - 1, Math.floor((x - L) / step))), X = L + i * step + step / 2;
+    var grp = sv.querySelector('.lch');
+    if (!grp) { grp = el('g', { 'class': 'lch' }); grp.appendChild(el('line', { 'class': 'lv', stroke: '#898781', 'stroke-dasharray': '3 3' })); grp.appendChild(el('rect', { 'class': 'lr', rx: 4, fill: '#fff', stroke: '#898781' })); sv.appendChild(grp); }
+    grp.style.display = ''; var ln = grp.querySelector('.lv'); ln.setAttribute('x1', X); ln.setAttribute('x2', X); ln.setAttribute('y1', T); ln.setAttribute('y2', T + ph);
+    grp.querySelectorAll('circle,text').forEach(function (n) { grp.removeChild(n); });
+    var rows = [lb[i]]; vs.forEach(function (v, k) { if (v[i] !== null) { rows.push((nm[k] ? nm[k] + ' ' : '') + v[i].toFixed(dec)); grp.appendChild(el('circle', { cx: X, cy: T + (mx - v[i]) / (mx - mn) * ph, r: 4, fill: co[k], stroke: '#fff', 'stroke-width': 1.5 })); } });
+    var texts = rows.map(function (t, k) { var e = el('text', { 'font-size': 11, fill: '#000', 'font-weight': k ? 400 : 700 }); e.textContent = t; grp.appendChild(e); return e; });
+    var w = Math.max.apply(null, texts.map(function (t) { return t.getComputedTextLength(); })) + 14, hgt = rows.length * 15 + 8, bx = X + 10; if (bx + w > W - 4) bx = X - 10 - w; if (bx < 2) bx = 2;
+    var by = T + 4, r = grp.querySelector('.lr'); r.setAttribute('x', bx); r.setAttribute('y', by); r.setAttribute('width', w); r.setAttribute('height', hgt);
+    texts.forEach(function (t, k) { t.setAttribute('x', bx + 7); t.setAttribute('y', by + 15 + k * 15); });
+  }
+  document.addEventListener('pointermove', mvL); document.addEventListener('pointerdown', mvL);
 })();
 </script>
 </body>
