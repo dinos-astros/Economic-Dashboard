@@ -1026,8 +1026,8 @@
   /* Leading, coincident or lagging, shown in the Glossary. Her classification (8 Nov 2026): interest rates and building permits leading, payrolls lagging, and the stock market labelled leading because most people treat it that way. */
   var TIMING = {
     'Michigan Consumer Sentiment': 'Coincident', 'Conference Board Consumer Confidence': 'Coincident', 'PCE (personal consumption expenditures)': 'Coincident', 'CPI (consumer price index)': 'Lagging', 'Retail sales': 'Coincident',
-    'Nonfarm payrolls': 'Lagging', 'Unemployment rate (national)': 'Lagging', 'Houston unemployment rate': 'Lagging', 'JOLTS job openings': 'Leading', 'Initial jobless claims': 'Leading',
-    'FOMC rate decisions': 'Leading', 'Fed funds rate (effective)': 'Leading', '10-year Treasury yield': 'Leading', '30-year mortgage rate': 'Leading', 'Prime rate': 'Leading',
+    'Nonfarm payrolls': 'Coincident', 'Unemployment rate (national)': 'Lagging', 'Houston unemployment rate': 'Lagging', 'JOLTS job openings': 'Leading', 'Initial jobless claims': 'Leading',
+    'FOMC rate decisions': 'Leading', 'Fed funds rate (effective)': 'Leading', '10-year Treasury yield': 'Leading', '30-year mortgage rate': 'Leading', 'Prime rate': 'Lagging',
     'VIX': 'Leading', 'S&P 500 and Nasdaq': 'Leading', 'US dollar index': 'Coincident', 'Gold': 'Coincident',
     'Conference Board Leading Economic Index': 'Leading', '10-year minus 2-year Treasury spread': 'Leading', 'CAPE (Shiller PE)': 'Leading',
     'ISM Manufacturing PMI': 'Leading', 'S&P Global US Manufacturing PMI': 'Leading', 'Dallas Fed Texas manufacturing production index': 'Leading',
@@ -1060,6 +1060,9 @@
   }
 
   main.innerHTML = html;
+  /* Jill's rule (19 Nov 2026): no commas in chart text. Strip them from every chart label, tick and legend after drawing. */
+  main.querySelectorAll('svg text').forEach(function (t) { if (t.textContent.indexOf(',') >= 0) t.textContent = t.textContent.replace(/,/g, ''); });
+  main.querySelectorAll('.legend').forEach(function (lg) { var w = document.createTreeWalker(lg, NodeFilter.SHOW_TEXT), nd; while ((nd = w.nextNode())) { if (nd.nodeValue.indexOf(',') >= 0) nd.nodeValue = nd.nodeValue.replace(/,/g, ''); } });
   /* Chart titles link to the source page of the data (the page always shows the latest figures, so the links never need updating when a chart is). Test every address before adding one. */
   (function () {
     var F = 'https://fred.stlouisfed.org/series/', CB = 'https://www.conference-board.org/topics/consumer-confidence', HAR = 'https://www.har.com/content/department/mls';
