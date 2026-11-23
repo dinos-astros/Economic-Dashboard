@@ -172,6 +172,7 @@ try {
 
 # ---------- 2. ETF charts ----------
 $etfStamp = if (Test-Path $etfFile) { (Get-Item $etfFile).LastWriteTime } else { $null }
+$preOpt = @{}; if (Test-Path $etfFile) { $preTxt = [IO.File]::ReadAllText($etfFile); foreach ($pm in [regex]::Matches($preTxt, "(?s) opt: \{(.*?)\}")) { foreach ($px in [regex]::Matches($pm.Groups[1].Value, "([A-Z]+):\s*(\d)")) { $preOpt[$px.Groups[1].Value] = $px.Groups[2].Value } } }   # the answers as they stood before this run, so a failed check can never lose one
 try {
   $etfToday = $false
   if (Test-Path $etfFile) { $etfToday = ([IO.File]::ReadAllText($etfFile) -match ('updated: "' + $today.ToString("yyyy-MM-dd") + '"')) }
@@ -228,8 +229,9 @@ try {
 try {
   $stampNow = if (Test-Path $etfFile) { (Get-Item $etfFile).LastWriteTime } else { $null }
   $txtNow = if (Test-Path $etfFile) { [IO.File]::ReadAllText($etfFile) } else { "" }
-  if ($txtNow -and ($Force -or ($stampNow -ne $etfStamp) -or -not $txtNow.Contains(" opt: {"))) {
-    $oldOpt = @{}; foreach ($m in [regex]::Matches($txtNow, "(?s) opt: \{(.*?)\}")) { foreach ($x in [regex]::Matches($m.Groups[1].Value, "([A-Z]+):\s*(\d)")) { $oldOpt[$x.Groups[1].Value] = $x.Groups[2].Value } }
+  $haveOpt = @{}; foreach ($hm in [regex]::Matches($txtNow, "(?s) opt: \{(.*?)\}")) { foreach ($hx in [regex]::Matches($hm.Groups[1].Value, "([A-Z]+):\s*(\d)")) { $haveOpt[$hx.Groups[1].Value] = $hx.Groups[2].Value } }
+  if ($txtNow -and ($Force -or ($stampNow -ne $etfStamp) -or $haveOpt.Count -lt 10)) {
+    $oldOpt = @{}; foreach ($k in $preOpt.Keys) { $oldOpt[$k] = $preOpt[$k] }; foreach ($k in $haveOpt.Keys) { $oldOpt[$k] = $haveOpt[$k] }
     $optLines = @(); $optBad = 0
     foreach ($sy in "IAU","GLDM","IAUM","AAAU","GLD","GDX","GDXJ","RING","SGDM","GOAU") {
       $val = $null
