@@ -649,7 +649,7 @@
       var out = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '">';
       /* what the call is today, in her words: one word for the market (Bull, Bear or Range) and two for the trend (Trending up or Trending down); the same call for SPY and QQQ because both must meet a rule */
       var cc = dayCall(FN - 1), mWord = { 'Bull': 'Bull', 'Bear': 'Bear', 'Range bound': 'Range bound' }[cc.market] || 'None', tWord = trendFor(s).dir, COLS = { 'Bull': '#1a7f4b', 'Bear': '#c0392b', 'Range bound': '#5a616d', 'Trending up': '#1a7f4b', 'Trending down': '#c0392b' };
-      out += '<text x="' + L + '" y="18" font-size="13" fill="' + INK + '">Open ' + fmt(m.o[n - 1], 2) + '&#160;&#160;&#160;&#160;High ' + fmt(m.h[n - 1], 2) + '&#160;&#160;&#160;&#160;Low ' + fmt(m.l[n - 1], 2) + '&#160;&#160;&#160;&#160;Close ' + fmt(m.c[n - 1], 2) + '&#160;&#160;&#160;&#160;Volume ' + fmt(m.v[n - 1] / 1e6, 1) + ' million shares</text>';
+      out += '<text x="' + L + '" y="18" font-size="13" fill="' + INK + '">Last update ' + dateLabel(m.d[n - 1]).replace(/,/g, '') + '&#160;&#160;&#160;&#160;Open ' + fmt(m.o[n - 1], 2) + '&#160;&#160;&#160;&#160;High ' + fmt(m.h[n - 1], 2) + '&#160;&#160;&#160;&#160;Low ' + fmt(m.l[n - 1], 2) + '&#160;&#160;&#160;&#160;Close ' + fmt(m.c[n - 1], 2) + '&#160;&#160;&#160;&#160;Volume ' + fmt(m.v[n - 1] / 1e6, 1) + ' million shares</text>';
       for (i = 0; i < k; i++) { v = lo + i * step; yy = Y(v); out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '" stroke="#e4e8ee"/><text x="' + (W - R + 8) + '" y="' + (yy + 4).toFixed(1) + '" font-size="13.5" fill="' + INK + '">' + fmt(v, 0) + '</text>'; }
       var bw = pw / n * 0.62, vmax = Math.max.apply(null, m.v);
       for (i = 0; i < n; i++) {
