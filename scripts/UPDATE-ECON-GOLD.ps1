@@ -27,7 +27,7 @@ $spotOk = $false; $etfOk = $false; $problems = @()
 
 # ---------- backup for the ETF data: Nasdaq public quote service (used only when Yahoo fails) ----------
 function Nasdaq-Backup {
-  $syms = "IAU","GLDM","IAUM","AAAU","GLD","GDX","GDXJ","RING","SGDM","GOAU"
+  $syms = "IAU","GLDM","IAUM","SGOL","GLD","GDX","GDXJ","RING","SGDM","GOAU"
   $oldTxt = [IO.File]::ReadAllText($etfFile)
   $od = [regex]::Match($oldTxt, " dates: \[(.*?)\],"); $og = [regex]::Match($oldTxt, " gold: \[(.*?)\],")
   $oldDates = @([regex]::Matches($od.Groups[1].Value, '\d{4}-\d{2}-\d{2}') | ForEach-Object { $_.Value })
@@ -180,7 +180,7 @@ try {
   if (-not $Force -and ($etfToday -or ($today.Hour -lt 17 -and -not $etfOld))) { Write-Output "gold ETFs: not due (refreshed once a day after 5 PM, and every run until it works)"; $etfOk = $true }
   else {
     if ($TestNasdaq) { throw "test: pretending Yahoo is down" }
-    $syms = "IAU","GLDM","IAUM","AAAU","GLD","GDX","GDXJ","RING","SGDM","GOAU"
+    $syms = "IAU","GLDM","IAUM","SGOL","GLD","GDX","GDXJ","RING","SGDM","GOAU"
     function Yahoo($s, $range, $interval, $div) {
       $lastErr = $null
       foreach ($h in "query1", "query2") {
@@ -233,7 +233,7 @@ try {
   if ($txtNow -and ($Force -or ($stampNow -ne $etfStamp) -or $haveOpt.Count -lt 10)) {
     $oldOpt = @{}; foreach ($k in $preOpt.Keys) { $oldOpt[$k] = $preOpt[$k] }; foreach ($k in $haveOpt.Keys) { $oldOpt[$k] = $haveOpt[$k] }
     $optLines = @(); $optBad = 0
-    foreach ($sy in "IAU","GLDM","IAUM","AAAU","GLD","GDX","GDXJ","RING","SGDM","GOAU") {
+    foreach ($sy in "IAU","GLDM","IAUM","SGOL","GLD","GDX","GDXJ","RING","SGDM","GOAU") {
       $val = $null
       try {
         $u = "https://api.nasdaq.com/api/quote/$sy/option-chain?assetclass=etf&limit=5&fromdate=$($today.ToString('yyyy-MM-dd'))&todate=$($today.AddYears(2).ToString('yyyy-MM-dd'))&excode=oprac&callput=callput&money=all&type=all"
