@@ -44,6 +44,7 @@ jobs:
               else { $o = & powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/$s" 2>&1 | Out-String }
               $bad = ($LASTEXITCODE -ne 0) -or ($o -match 'FAILED|Exception|cannot be found')
               $status += ($s + ': ' + $(if ($bad) { 'CHECK' } else { 'ok' }))
+              if ($bad) { foreach ($ln in ($o -split "`n" | Where-Object { $_ -match 'FAILED|Exception|cannot be found' } | Select-Object -First 6)) { $t2 = $ln.Trim(); $status += ('    ' + $t2.Substring(0, [math]::Min(200, $t2.Length))) } }
               Write-Host "=== $s"; Write-Host $o
             } catch { $status += ($s + ': FAILED'); Write-Host "=== $s FAILED: $_" }
           }
