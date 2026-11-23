@@ -1,8 +1,6 @@
-﻿UPDATE-ECON-DASHBOARD.ps1: CHECK
-    Done. Tiles: 11. New reading rows: 26. Sources failed: 0.
+﻿UPDATE-ECON-DASHBOARD.ps1: ok
 UPDATE-ECON-VIX.ps1: ok
 UPDATE-ECON-MARKET.ps1: ok
 UPDATE-ECON-CRUDE.ps1: ok
-UPDATE-ECON-LISTENING.ps1: CHECK
-    UPDATE-ECON-LISTENING.ps1: Done. Shows found now: 4 of 4. Rows kept on the page: 4. Failed: 0.
+UPDATE-ECON-LISTENING.ps1: ok
 UPDATE-ECON-GOLD.ps1: ok
