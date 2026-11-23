@@ -488,7 +488,7 @@
     var mid = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
     mid.forEach(function (d, m) { out += '<text x="' + X(d).toFixed(1) + '" y="' + (H - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + MON[m] + '</text>'; });
     out += '<text transform="rotate(-90 10 ' + (T + ph / 2) + ')" x="10" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.leftTitle) + '</text><text transform="rotate(90 ' + (W - 8) + ' ' + (T + ph / 2) + ')" x="' + (W - 8) + '" y="' + (T + ph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">' + esc(o.rightTitle) + '</text></svg>';
-    return card(title, '', out, legend([['#d9822b', String(o.year), 'line'], ['#a9b1bd', String(o.year - 1), 'line'], ['#1a3a7a', o.barLabel]]));
+    return card(title, o.note || '', out, legend([['#d9822b', String(o.year), 'line'], ['#a9b1bd', String(o.year - 1), 'line'], ['#1a3a7a', o.barLabel]]));
   }  /* weekly version of the same layout: total on the left axis as an orange line, the change from last week as navy bars on the right axis, equal ticks on both */
   function weeklyCard(title, labels, lineVals, barVals, o) {
     var W = 520, H = 200, L = 68, R = 58, T = 12, B = 40, pw = W - L - R, ph = H - T - B, n = labels.length, step = pw / n, i, v, yy;
@@ -791,7 +791,7 @@
       var curP = [], prevP = [], barP = [];
       rA.labels.forEach(function (lb, i) { var y = +lb.slice(0, 4); if (y === yrNow) curP.push({ doy: doyOf(lb), v: rA.vals[i] }); else if (y === yrNow - 1) prevP.push({ doy: doyOf(lb), v: rA.vals[i] }); });
       curP.forEach(function (p, i) { if (i > 0) barP.push({ doy: p.doy, v: (p.v - curP[i - 1].v) / curP[i - 1].v * 100 }); });
-      html += weeklyYearCard(pair[1] + ' ' + yrNow + ': rigs this week ' + rv[n], curP, prevP, barP, { year: yrNow, leftTitle: 'Rigs', rightTitle: '% change WoW', rightUnit: '%', barLabel: 'WoW %' });
+      html += weeklyYearCard(pair[1] + ' ' + yrNow + ': rigs this week ' + rv[n], curP, prevP, barP, { year: yrNow, leftTitle: 'Rigs', rightTitle: '% change WoW', rightUnit: '%', barLabel: 'WoW %', note: (pair[1] === 'Canada' ? 'Neither the US nor Canada has a national oil company, so private producers drill in response to oil prices.' : 'More rigs mean higher E&P cap spend, and more business for oil field services, resulting in higher oil patch employment.') });
       return;
     }
     html += weeklyCard(pair[1] + ' ' + yrNow + ': rigs this week ' + rv[n], rl.map(dayLabel), rv, wow, { leftTitle: 'Rigs', lineLabel: 'Total rigs', rightTitle: '% change WoW', rightUnit: '%', barLabel: 'WoW %' });
@@ -818,7 +818,7 @@
     csv += poly(band.map(function (b) { return [b.x, b.max]; }), '#9aa5b5', 1.6) + poly(band.map(function (b) { return [b.x, b.min]; }), '#9aa5b5', 1.6) + poly(band.map(function (b) { return [b.x, b.avg]; }), '#d9822b', 2, true) + poly(cur.map(function (w) { return [(w.doy - 0.5) / 365, w.v]; }), '#1a3a7a', 3);
     ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach(function (mn, i) { csv += '<text x="' + cx((i * 30.4 + 15) / 365).toFixed(1) + '" y="' + (CH - 14) + '" font-size="10.5" fill="#6b7686" text-anchor="middle">' + mn + '</text>'; });
     csv += '<text transform="rotate(-90 10 ' + (CT + cph / 2) + ')" x="10" y="' + (CT + cph / 2) + '" font-size="10.5" fill="#000" text-anchor="middle">Million barrels</text></svg>';
-    html += '<div class="card"><h3>US crude oil stocks (million barrels)</h3>' + csv + legend([['#1a3a7a', String(cy), 'line'], ['#d9822b', '5-year average', 'dash'], ['#9aa5b5', '5-year high and low', 'line']]) + '</div>'; html += rigW;
+    html += '<div class="card"><h3>US crude oil stocks (million barrels)</h3><div class="note">Crude stocks below the 5-year average support oil prices</div>' + csv + legend([['#1a3a7a', String(cy), 'line'], ['#d9822b', '5-year average', 'dash'], ['#9aa5b5', '5-year high and low', 'line']]) + '</div>'; html += rigW;
   }
   html += '</div>';
 
