@@ -596,7 +596,7 @@
   ['vix', 'prime', 't3m', 't10', 'real10', 'effr', 'mort30'].forEach(function (id) { var t = tileById(id); if (t) html += tileHTML(t); });
   html += ercotTile() + '</div>';
   html += '<div class="grid" style="margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))">' +
-    tvw({ name: 'Stocks, dollar and gold (live)', symbols: [{ name: 'AMEX:SPY', displayName: 'SPY' }, { name: 'FOREXCOM:NSXUSD', displayName: 'Nasdaq 100' }, { name: 'CAPITALCOM:DXY', displayName: 'US Dollar Index' }, { name: 'OANDA:XAUUSD', displayName: 'Gold (dollars per ounce)' }] }) +
+    tvw({ name: 'Stocks, dollar and gold (live)', symbols: [{ name: 'FOREXCOM:SPXUSD', displayName: 'S&P 500' }, { name: 'FOREXCOM:NSXUSD', displayName: 'Nasdaq 100' }, { name: 'CAPITALCOM:DXY', displayName: 'US Dollar Index' }, { name: 'OANDA:XAUUSD', displayName: 'Gold (dollars per ounce)' }] }) +
     tvw({ name: 'Oil and natural gas (live)', symbols: [{ name: 'SKILLING:XTIUSD', displayName: 'WTI Crude' }, { name: 'OANDA:BCOUSD', displayName: 'Brent Crude' }, { name: 'SKILLING:NATGAS', displayName: 'Henry Hub Nat Gas' }] }) +
     '</div>';
 
