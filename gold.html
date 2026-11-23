@@ -158,12 +158,13 @@ function ticks(lo,hi){var st=[1,2,2.5,5],m=Math.pow(10,Math.floor(Math.log10((hi
 function fmt(v,s){return s<1?v.toFixed(2):(s%1?v.toFixed(1):Math.round(v).toString())}
 function lineChart(sym){
  var D=GOLD_ETF,y=D.etf[sym],g=D.gold,n=g.length,X0=56,X1=238,Y0=12,Y1=150;
- var ta=ticks(Math.min.apply(null,y),Math.max.apply(null,y)),tb=ticks(Math.min.apply(null,g),Math.max.apply(null,g));
+ var ta=ticks(Math.min.apply(null,y),Math.max.apply(null,y)),tb=ticks(Math.min.apply(null,g),Math.max.apply(null,g)),BULL={IAU:1,GLDM:1,IAUM:1,SGOL:1,GLD:1,AAAU:1,BAR:1,OUNZ:1,PHYS:1},same=!!BULL[sym];
+ if(same){var rr=g.map(function(v,i){return v/y[i]}).sort(function(a,b){return a-b}),r=rr[Math.floor(rr.length/2)],lo=Math.min(Math.min.apply(null,y),Math.min.apply(null,g)/r),hi=Math.max(Math.max.apply(null,y),Math.max.apply(null,g)/r);ta=ticks(lo,hi);tb={l:ta.l*r,s:ta.s*r}}
  function px(i){return X0+(X1-X0)*i/(n-1)}
  function py(v,t){return Y1-(Y1-Y0)*(v-t.l)/(4*t.s)}
  var s='<svg viewBox="0 0 300 200" role="img"><title>'+sym+' price and gold price</title>',T='font-size="12" fill="#000"';
  for(var k=0;k<=4;k++){var yy=Y1-(Y1-Y0)*k/4;s+='<line x1="'+X0+'" y1="'+yy+'" x2="'+X1+'" y2="'+yy+'" stroke="#e1dfd8"/>';
-  s+='<text x="'+(X0-4)+'" y="'+(yy+3.5)+'" text-anchor="end" '+T+'>'+fmt(ta.l+k*ta.s,ta.s)+'</text><text x="'+(X1+4)+'" y="'+(yy+3.5)+'" '+T+'>'+fmt(tb.l+k*tb.s,tb.s)+'</text>'}
+  s+='<text x="'+(X0-4)+'" y="'+(yy+3.5)+'" text-anchor="end" '+T+'>'+fmt(ta.l+k*ta.s,ta.s)+'</text><text x="'+(X1+4)+'" y="'+(yy+3.5)+'" '+T+'>'+(same?Math.round(tb.l+k*tb.s):fmt(tb.l+k*tb.s,tb.s))+'</text>'}
  s+='<line x1="'+X0+'" y1="'+Y1+'" x2="'+X1+'" y2="'+Y1+'" stroke="#898781"/><line x1="'+X0+'" y1="'+Y0+'" x2="'+X0+'" y2="'+Y1+'" stroke="#898781"/><line x1="'+X1+'" y1="'+Y0+'" x2="'+X1+'" y2="'+Y1+'" stroke="#898781"/>';
  var M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],starts=[0],pm=D.dates[0].slice(5,7);
  for(var i=1;i<n;i++){var mm=D.dates[i].slice(5,7);if(mm!==pm){starts.push(i);pm=mm}}
