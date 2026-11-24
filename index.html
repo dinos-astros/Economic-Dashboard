@@ -50,7 +50,10 @@
   .watch3 { grid-template-columns: 1fr 1fr 1fr; }
   .watch3 > .card > svg { max-width: 100%; height: auto; }
   .real4 { grid-template-columns: repeat(4, 1fr); }
-  .watch3 { grid-template-columns: 280px 280px 380px 290px 280px; }
+  .watch3 { grid-template-columns: 195px 195px 380px 290px 195px 195px; gap: 8px; }
+  .watch3 > .card { padding: 12px 12px; }
+  .watch3 > .card .note { font-size: 11px; line-height: 1.25; margin: 2px 0 4px; }
+  .watch3 > .card h3 { font-size: 14px; line-height: 1.2; }   /* all six Bubble Watch tiles in one row: the simple tiles are narrower, the two gauge tiles keep their width (24 Nov 2026) */
   .tile.wide { grid-column: span 2; grid-row: span 2; }
   .card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
   .card .note { font-size: 12.5px; color: #000; margin: 2px 0 8px; }
@@ -97,6 +100,7 @@
 <script src="history.js"></script>
 <script src="crude.js"></script>
 <script src="market.js"></script>
+<script src="sentiment.js"></script>
 <script>
 (function () {
   var main = document.getElementById('main');
@@ -721,23 +725,45 @@
   }
 
   /* ---------- Recession and Bubble Watch ---------- */
+  /* ---------- Market Sentiment: AAII Investor Sentiment Survey and the Cboe put/call ratio (sentiment.js, 24 Nov 2026). Same card style as Bubble Watch: one number, a bar with the average marked, her meaning line. ---------- */
+  if (window.SENTIMENT && ((SENTIMENT.aaii && SENTIMENT.aaii.length) || (SENTIMENT.cboe && SENTIMENT.cboe.length))) {
+    var sentHtml = '';
+    var sDate = function (d) { var p = d.split('-'); return MON[+p[1] - 1] + ' ' + (+p[2]) + ' ' + p[0]; };
+    var sBar = function (lo, hi, avg, val, col, avgLabel, loLabel, hiLabel) {
+      var w = 300, xx = function (v) { return Math.max(0, Math.min(w, (v - lo) / (hi - lo) * w)); };
+      return '<svg width="' + (w + 20) + '" height="52" viewBox="-10 0 ' + (w + 20) + ' 52"><rect x="0" y="16" width="' + xx(avg) + '" height="10" fill="#d4ebdc"/><rect x="' + xx(avg) + '" y="16" width="' + (w - xx(avg)) + '" height="10" fill="#f3d3cf"/><line x1="' + xx(avg) + '" y1="10" x2="' + xx(avg) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + xx(val) + '" cy="21" r="7" fill="' + col + '" stroke="#fff" stroke-width="2"/>' +
+        '<text x="' + xx(avg) + '" y="46" font-size="11" fill="#6b7686" text-anchor="middle">' + avgLabel + '</text><text x="0" y="46" font-size="11" fill="#6b7686">' + loLabel + '</text><text x="' + w + '" y="46" font-size="11" fill="#6b7686" text-anchor="end">' + hiLabel + '</text></svg>';
+    };
+    if (SENTIMENT.aaii && SENTIMENT.aaii.length) {
+      var al = SENTIMENT.aaii[SENTIMENT.aaii.length - 1], abv = al.bear > al.avgBear, acol = abv ? '#c0392b' : '#1a7f4b';
+      sentHtml += '<div class="card sent1"><h3 style="margin:0 0 2px">AAII Investor Sentiment Survey</h3><b style="font-size:16px;color:' + acol + '">Pessimism signal: ' + (abv ? 'on' : 'none') + '</b><div class="gauge-num" style="color:' + acol + '">' + fmt(al.bear, 1) + '%</div>' +
+        sBar(0, 60, al.avgBear, al.bear, acol, 'average ' + fmt(al.avgBear, 1) + '%', '0', '60%') +
+        '<div class="note">A weekly survey of where stocks go next. Week ending ' + sDate(al.d) + '.</div></div>';
+    }
+    if (SENTIMENT.cboe && SENTIMENT.cboe.length && SENTIMENT.benchmark) {
+      var cl = SENTIMENT.cboe[SENTIMENT.cboe.length - 1], bm = SENTIMENT.benchmark.equity, cabv = cl.e > bm, ccol = cabv ? '#c0392b' : '#1a7f4b';
+      sentHtml += '<div class="card"><h3 style="margin:0 0 2px">Cboe equity put/call ratio</h3><b style="font-size:16px;color:' + ccol + '">Fear signal: ' + (cabv ? 'on' : 'none') + '</b><div class="gauge-num" style="color:' + ccol + '">' + fmt(cl.e, 2) + '</div>' +
+        sBar(0.3, 1.0, bm, cl.e, ccol, 'average ' + fmt(bm, 2), '0.3', '1.0') +
+        '<div class="note">A higher ratio means more investors are buying puts, a sign of fear. ' + sDate(cl.d) + '.</div></div>';
+    }
+  }
   section('watch', TITLES.watch, '');
   html += '<div class="grid watch watch3">';
   if (DATA.spread) {
     var s = DATA.spread, lo = -1, hi = 2, w = 300, x = function (v) { return Math.max(0, Math.min(w, (v - lo) / (hi - lo) * w)); }, neg = s.value < 0;
-    html += '<div class="card"><h3 style="margin:0 0 2px"><a href="https://fred.stlouisfed.org/series/T10Y2Y" target="_blank" rel="noopener" style="color:#1a3a7a;text-decoration:underline">10 yr minus 2 yr Treasury spread</a></h3><b style="font-size:16px;color:' + (neg ? '#c0392b' : '#1a7f4b') + '">Recession signal: ' + (neg ? 'on' : 'none') + '</b><div class="gauge-num ' + (neg ? 'down' : 'up') + '">' + signed(s.value, 2) + '<span style="font-size:14px;font-weight:600"> points (' + signed(Math.round(s.value * 100), 0) + '\u00a0bps)</span></div>' +
+    html += '<div class="card"><h3 style="margin:0 0 2px"><a href="https://fred.stlouisfed.org/series/T10Y2Y" target="_blank" rel="noopener" style="color:#1a3a7a;text-decoration:underline">10 yr minus 2 yr Treasury spread</a></h3><b style="font-size:16px;color:' + (neg ? '#c0392b' : '#1a7f4b') + '">Recession signal: ' + (neg ? 'on' : 'none') + '</b><div class="gauge-num ' + (neg ? 'down' : 'up') + '">' + signed(s.value, 2) + '<span style="font-size:11px;font-weight:600;white-space:nowrap"> points (' + signed(Math.round(s.value * 100), 0) + '\u00a0bps)</span></div>' +
       '<svg width="' + (w + 20) + '" height="52" viewBox="-10 0 ' + (w + 20) + ' 52"><rect x="0" y="16" width="' + x(0) + '" height="10" fill="#f3d3cf"/><rect x="' + x(0) + '" y="16" width="' + (w - x(0)) + '" height="10" fill="#d4ebdc"/>' +
       '<line x1="' + x(0) + '" y1="10" x2="' + x(0) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + x(s.value) + '" cy="21" r="7" fill="' + (neg ? '#c0392b' : '#1a7f4b') + '" stroke="#fff" stroke-width="2"/>' +
       '<text x="' + x(0) + '" y="46" font-size="11" fill="#6b7686" text-anchor="middle">0 (the warning line)</text><text x="0" y="46" font-size="11" fill="#6b7686">-100 bps</text><text x="' + w + '" y="46" font-size="11" fill="#6b7686" text-anchor="end">+200 bps</text></svg>' +
-      '<div class="note">Below zero is an inverted curve. Updated as of ' + dateLabel(s.asOf) + '.</div></div>';
+      '<div class="note">Below 0, expects a recession in 12 months. Updated as of ' + dateLabel(s.asOf) + '.</div></div>';
   }
   if (DATA.shiller) {
     var sh = DATA.shiller, w2 = 300, x2 = function (v) { return Math.max(0, Math.min(w2, v / 50 * w2)); };
-    html += '<div class="card"><h3><a href="https://www.multpl.com/shiller-pe" target="_blank" rel="noopener" style="color:#1a3a7a;text-decoration:underline">CAPE (Shiller PE)</a></h3><b style="font-size:16px;color:' + ((sh.value > sh.mean) ? '#c0392b' : '#1a7f4b') + '">Bubble signal: ' + ((sh.value > sh.mean) ? 'on' : 'none') + '</b><div class="gauge-num" style="color:#c0392b">' + fmt(sh.value, 2) + '</div>' +
-      '<svg width="' + (w2 + 20) + '" height="52" viewBox="-10 0 ' + (w2 + 20) + ' 52"><rect x="0" y="16" width="' + w2 + '" height="10" fill="#f3d3cf"/><rect x="0" y="16" width="' + x2(sh.mean) + '" height="10" fill="#d4ebdc"/>' +
-      '<line x1="' + x2(sh.mean) + '" y1="10" x2="' + x2(sh.mean) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + x2(sh.value) + '" cy="21" r="7" fill="#c0392b" stroke="#fff" stroke-width="2"/>' +
-      '<text x="' + x2(sh.mean) + '" y="46" font-size="11" fill="#6b7686" text-anchor="middle">average ' + fmt(sh.mean, 2) + '</text><text x="0" y="46" font-size="11" fill="#6b7686">0</text><text x="' + w2 + '" y="46" font-size="11" fill="#6b7686" text-anchor="end">50</text></svg>' +
-      '<div class="note">' + fmt(sh.value / sh.mean, 1) + ' times its long-run average. Read ' + dateLabel(sh.asOf) + '.</div></div>';
+    html += '<div class="card"><h3><a href="https://www.multpl.com/shiller-pe" target="_blank" rel="noopener" style="color:#1a3a7a;text-decoration:underline">CAPE (Shiller PE)</a></h3><b style="font-size:16px;color:' + ((sh.value > 35) ? '#c0392b' : '#1a7f4b') + '">Bubble signal: ' + ((sh.value > 35) ? 'on' : 'none') + '</b><div class="gauge-num" style="color:#c0392b">' + fmt(sh.value, 2) + '</div>' +
+      '<svg width="' + (w2 + 20) + '" height="52" viewBox="-10 0 ' + (w2 + 20) + ' 52"><rect x="0" y="16" width="' + w2 + '" height="10" fill="#f3d3cf"/><rect x="0" y="16" width="' + x2(35) + '" height="10" fill="#d4ebdc"/>' +
+      '<line x1="' + x2(35) + '" y1="10" x2="' + x2(35) + '" y2="32" stroke="#1c2430" stroke-width="2"/><circle cx="' + x2(sh.value) + '" cy="21" r="7" fill="#c0392b" stroke="#fff" stroke-width="2"/>' +
+      '<text x="' + x2(35) + '" y="46" font-size="11" fill="#6b7686" text-anchor="middle">35 (the warning line)</text><text x="0" y="46" font-size="11" fill="#6b7686">0</text><text x="' + w2 + '" y="46" font-size="11" fill="#6b7686" text-anchor="end">50</text></svg>' +
+      '<div class="note">&gt;35, expect stock repricing and lower long term returns. Read ' + dateLabel(sh.asOf) + '.</div></div>';
   }
   var lei = manual('Conference Board Leading Economic Index');
   var lrel = manual('Leading Economic Index, release date'), lnext = manual('Leading Economic Index, next release'), ldiff = manual('Leading Economic Index, six-month diffusion'), lgrow = manual('Leading Economic Index, six-month growth (yearly pace)');
@@ -775,6 +801,7 @@
       '<text x="0" y="46" font-size="11" fill="#000">50</text><text x="' + xg(80) + '" y="46" font-size="11" fill="#000" text-anchor="middle">80 (the warning line)</text><text x="' + xw + '" y="46" font-size="11" fill="#000" text-anchor="end">100</text></svg>' +
       '<div class="note" style="margin-top:4px">' + monthLabel(xl.d).replace('-', ' 20') + (xpv ? ' · Last month ' + fmt(xpv.v, 1) : '') + '</div></div>';
   }
+  html += sentHtml;
   html += '</div>';
 
   /* ---------- Energy activity ---------- */
@@ -1030,7 +1057,7 @@
     'PCE (personal consumption expenditures)': 'Coincident', 
     'Nonfarm payrolls': 'Coincident', 'Unemployment rate (national)': 'Lagging', 'Houston unemployment rate': 'Lagging', 'Initial jobless claims': 'Leading',
     'Prime rate': 'Lagging',
-    'S&P 500 and Nasdaq': 'Leading', 
+    'S&P 500 and Nasdaq': 'Leading', 'CAPE (Shiller PE)': 'Leading', 
     'Conference Board Leading Economic Index': 'Leading', '10-year minus 2-year Treasury spread': 'Leading', 
     'ISM Manufacturing PMI': 'Leading', 
     'Baker Hughes rig counts, USA and Canada': 'Lagging',
@@ -1057,7 +1084,12 @@
     M.manual.forEach(function (g) { var p = g.points[g.points.length - 1]; html += '<tr><td>' + esc(g.indicator) + '</td><td>' + esc(p.d) + '</td><td>' + esc(g.readOn) + '</td><td>' + (g.sourceUrl ? '<a href="' + esc(g.sourceUrl) + '">' + esc(g.source) + '</a>' : esc(g.source)) + (g.indicator === 'Conference Board Leading Economic Index' ? '. March to June read from the Conference Board chart, within about 0.1' : '') + '</td></tr>'; });
     html += '</table></details>';
   }
-  if (window.ELECTIONS) {
+  if (window.SENTIMENT) {
+    var ssa = (SENTIMENT.aaii || []), ssc = (SENTIMENT.cboe || []);
+    html += '<details><summary>Market Sentiment: source and last update</summary><table><tr><th>Indicator</th><th>Latest figure for</th><th>Source</th></tr>' +
+      (ssa.length ? '<tr><td>AAII Investor Sentiment Survey</td><td>' + esc(dateLabel(ssa[ssa.length - 1].d)) + '</td><td><a href="https://insights.aaii.com/">AAII Insights, weekly survey results</a></td></tr>' : '') +
+      (ssc.length ? '<tr><td>Cboe equity put/call ratio</td><td>' + esc(dateLabel(ssc[ssc.length - 1].d)) + '</td><td><a href="https://www.cboe.com/us/options/market_statistics/">Cboe market statistics, daily files</a></td></tr>' : '') + '</table></details>';
+  }  if (window.ELECTIONS) {
     html += '<details><summary>Elections: sources</summary><table><tr><th>Election</th><th>Source</th></tr>' + ELECTIONS.map(function (e) { return '<tr><td>' + esc(e.country) + ': ' + esc(e.what.split(' (')[0]) + '</td><td>' + e.srcs.map(function (s) { return '<a href="' + esc(s[1]) + '">' + esc(s[0]) + '</a>'; }).join('; ') + '</td></tr>'; }).join('') + '</table></details>';
   }
 
@@ -1069,7 +1101,7 @@
   (function () {
     var F = 'https://fred.stlouisfed.org/series/', CB = 'https://www.conference-board.org/topics/consumer-confidence', HAR = 'https://www.har.com/content/department/mls';
     var TITLE_LINKS = [
-      ['SPY', 'https://finance.yahoo.com/quote/SPY/history/'], ['QQQ', 'https://finance.yahoo.com/quote/QQQ/history/'],
+      ['AAII Investor Sentiment Survey', 'https://www.aaii.com/sentimentsurvey'], ['Cboe equity put/call ratio', 'https://www.cboe.com/us/options/market_statistics/historical_data/'], ['SPY', 'https://finance.yahoo.com/quote/SPY/history/'], ['QQQ', 'https://finance.yahoo.com/quote/QQQ/history/'],
       ['United States', 'https://rigcount.bakerhughes.com/na-rig-count'], ['Canada', 'https://rigcount.bakerhughes.com/na-rig-count'],
       ['US crude oil stocks', 'https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W'],
       ['Texas manufacturing', 'https://www.dallasfed.org/research/surveys/tmos'],

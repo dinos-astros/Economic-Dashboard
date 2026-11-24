@@ -9,7 +9,7 @@ $ua = @{ 'User-Agent' = 'Mozilla/5.0' }
 $file = Join-Path $Out "sentiment.js"
 $prev = $null
 if (Test-Path $file) { try { $prev = ((Get-Content $file -Raw) -replace '^window\.SENTIMENT = ', '' -replace ';\s*$', '') | ConvertFrom-Json } catch { $prev = $null } }
-$maxAaiiWeeks = 60      # about a year plus a few weeks
+$maxAaiiWeeks = 70      # a little over a year of weeks
 $maxCboeDays = 262      # about 12 months of trading days
 $note = @()
 
@@ -38,16 +38,18 @@ function Post-Date($html) {
   if ($m.Success) { return $m.Groups[1].Value } else { return $null }
 }
 $aaii = @(); if ($prev -and $prev.aaii) { $aaii = @($prev.aaii) }
+$seen = @{}; if ($prev -and $prev.seen) { foreach ($u in @($prev.seen)) { $seen[$u] = $true } }   # article addresses already read, so each is fetched once (AAII uses two address styles, 24 Nov 2026)
 $have = @{}; foreach ($w in $aaii) { $have[$w.d] = $true }
 try {
   $sm = Get-Page "https://insights.aaii.com/sitemap.xml"
-  $urls = @([regex]::Matches($sm, '<loc>([^<]*/p/aaii-sentiment-survey[^<]*)</loc>') | ForEach-Object { $_.Groups[1].Value })
+  $urls = @([regex]::Matches($sm, '<loc>([^<]*/p/[^<]*aaii-sentiment[^<]*)</loc>') | ForEach-Object { $_.Groups[1].Value })
   if ($urls.Count -eq 0) { throw "no AAII survey articles in the sitemap" }
-  $look = if ($aaii.Count -eq 0) { [math]::Min($urls.Count, $maxAaiiWeeks) } else { 4 }   # first run reads a year back, later runs only the newest four
+  $look = $urls.Count   # every article not yet read
   $added = 0
   foreach ($u in ($urls | Select-Object -First $look)) {
+    if ($seen.ContainsKey($u)) { continue }
     try {
-      $html = Get-Page $u
+      $html = Get-Page $u; $seen[$u] = $true
       $d = Post-Date $html; if (-not $d) { continue }
       $pd = [datetime]::ParseExact($d, 'yyyy-MM-dd', $null); while ($pd.DayOfWeek -ne 'Wednesday') { $pd = $pd.AddDays(-1) }; $d = $pd.ToString('yyyy-MM-dd')   # AAII's survey week ends on a Wednesday; the article is posted on or after it
       if ($have.ContainsKey($d)) { continue }
@@ -82,8 +84,17 @@ for ($i = 0; $i -lt $days; $i++) {
 if ($failC -gt 5) { $note += "Cboe: $failC requests failed" }
 $cboe = @($cboe | Sort-Object d | Select-Object -Last $maxCboeDays)
 
+# ---------- Benchmark for the equity put/call ratio: the average of Cboe's own daily file, November 2006 to October 2019 (the archive stops there), computed once and kept ----------
+$bench = $null; if ($prev -and $prev.benchmark) { $bench = $prev.benchmark }
+if (-not $bench) {
+  try {
+    $csv = Get-Page "https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/equitypc.csv"; $bv = @()
+    foreach ($l in ($csv -split "`n")) { if ($l -match '^\s*\d{1,2}/\d{1,2}/\d{4}\s*,.*,\s*([\d.]+)\s*$') { $bv += [double]$Matches[1] } }
+    if ($bv.Count -gt 1000) { $bench = [ordered]@{ equity = [math]::Round((($bv | Measure-Object -Average).Average), 2); days = $bv.Count; period = "Nov 2006 to Oct 2019" } }
+  } catch { $note += "Cboe benchmark failed" }
+}
 # ---------- Write sentiment.js only when something changed ----------
-$obj = [ordered]@{ aaii = [object[]]$aaii; cboe = [object[]]$cboe }
+$obj = [ordered]@{ aaii = [object[]]$aaii; cboe = [object[]]$cboe; seen = [object[]]@($seen.Keys | Sort-Object); benchmark = $bench }
 $text = "window.SENTIMENT = " + ($obj | ConvertTo-Json -Depth 5 -Compress) + ";"
 $old = $null; if (Test-Path $file) { $old = [IO.File]::ReadAllText($file) }
 if ($aaii.Count -eq 0 -and $cboe.Count -eq 0) { "SENTIMENT: FAILED nothing read, file left alone"; exit }

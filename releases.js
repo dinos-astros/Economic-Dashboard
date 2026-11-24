@@ -30,5 +30,10 @@ window.RELEASES = [
   { date: "2026-12-09", at: "13:00", ok: true,  name: "Fed rate decision (FOMC, Dec 8-9)", src: "Federal Reserve", url: "https://www.federalreserve.gov/newsevents/pressreleases.htm" },
   { date: "2026-12-16", at: "09:30", ok: false, name: "EIA crude oil stocks", src: "EIA", url: "https://www.eia.gov/petroleum/supply/weekly/" },
   { date: "2026-12-23", at: "09:30", ok: false, name: "EIA crude oil stocks", src: "EIA", url: "https://www.eia.gov/petroleum/supply/weekly/" },
-  { date: "2026-12-30", at: "09:30", ok: false, name: "EIA crude oil stocks", src: "EIA", url: "https://www.eia.gov/petroleum/supply/weekly/" }
+  { date: "2026-12-30", at: "09:30", ok: false, name: "EIA crude oil stocks", src: "EIA", url: "https://www.eia.gov/petroleum/supply/weekly/" },
+  { date: "2026-11-26", at: "09:00", ok: false, name: "AAII sentiment survey (weekly, Thursdays)", src: "AAII", url: "https://www.aaii.com/sentimentsurvey" },
+  { date: "2026-12-03", at: "09:00", ok: false, name: "AAII sentiment survey (weekly, Thursdays)", src: "AAII", url: "https://www.aaii.com/sentimentsurvey" },
+  { date: "2026-12-10", at: "09:00", ok: false, name: "AAII sentiment survey (weekly, Thursdays)", src: "AAII", url: "https://www.aaii.com/sentimentsurvey" },
+  { date: "2026-12-17", at: "09:00", ok: false, name: "AAII sentiment survey (weekly, Thursdays)", src: "AAII", url: "https://www.aaii.com/sentimentsurvey" },
+  { date: "2026-12-24", at: "09:00", ok: false, name: "AAII sentiment survey (weekly, Thursdays)", src: "AAII", url: "https://www.aaii.com/sentimentsurvey" }
 ];
