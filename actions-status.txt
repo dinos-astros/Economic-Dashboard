@@ -1,5 +1,5 @@
 ﻿UPDATE-ECON-DASHBOARD.ps1: CHECK
-    FAILED: Shiller PE :: Unable to connect to the remote server
+    FAILED: Shiller PE :: kept the reading from 2026-11-23: Unable to connect to the remote server
 UPDATE-ECON-VIX.ps1: ok
 UPDATE-ECON-MARKET.ps1: ok
 UPDATE-ECON-CRUDE.ps1: ok
