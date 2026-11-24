@@ -35,11 +35,11 @@ jobs:
           tzutil /s 'Central Standard Time'
           $out = Join-Path $env:RUNNER_TEMP 'out'
           New-Item -ItemType Directory -Force $out | Out-Null
-          $files = 'data.js','gold-spot.js','gold-etf.js','market.js','crude.js','listening.js'
+          $files = 'data.js','gold-spot.js','gold-etf.js','market.js','sentiment.js','crude.js','listening.js'
           foreach ($f in $files) { if (Test-Path $f) { Copy-Item $f $out -Force } }
           $env:ECON_OUT = $out
           $status = @()
-          $scripts = 'UPDATE-ECON-DASHBOARD.ps1','UPDATE-ECON-VIX.ps1','UPDATE-ECON-MARKET.ps1','UPDATE-ECON-CRUDE.ps1','UPDATE-ECON-LISTENING.ps1','UPDATE-ECON-GOLD.ps1'
+          $scripts = 'UPDATE-ECON-DASHBOARD.ps1','UPDATE-ECON-VIX.ps1','UPDATE-ECON-MARKET.ps1','UPDATE-ECON-SENTIMENT.ps1','UPDATE-ECON-CRUDE.ps1','UPDATE-ECON-LISTENING.ps1','UPDATE-ECON-GOLD.ps1'
           foreach ($s in $scripts) {
             try {
               if ($s -eq 'UPDATE-ECON-DASHBOARD.ps1') { $o = & powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/$s" -Out $out 2>&1 | Out-String }
