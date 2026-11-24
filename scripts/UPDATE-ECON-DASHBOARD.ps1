@@ -205,7 +205,11 @@ try {
   $shiller = [ordered]@{ asOf = $now.ToString("yyyy-MM-dd"); value = [double]$m.Groups[1].Value; mean = [double]$mean.Groups[1].Value; median = [double]$med.Groups[1].Value }
   Add-Reading $shiller.asOf "Shiller PE" $shiller.value "multpl.com"
   Add-Status "Shiller PE" $true "multpl.com"
-} catch { Add-Status "Shiller PE" $false $_.Exception.Message }
+} catch {
+  # multpl.com did not answer: keep the last good reading (with its own date) so the Bubble Watch tile does not vanish (23-24 Nov 2026)
+  if ($prev -and $prev.shiller) { $shiller = $prev.shiller; Add-Status "Shiller PE" $false ("kept the reading from " + $prev.shiller.asOf + ": " + $_.Exception.Message) $true }
+  else { Add-Status "Shiller PE" $false $_.Exception.Message }
+}
 
 # ---------- BLS: jobs and prices, last 36 months ----------
 $blsSeries = @(
