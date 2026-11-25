@@ -209,11 +209,38 @@ try {
   Add-Reading $shiller.asOf "Shiller PE" $shiller.value "multpl.com"
   Add-Status "Shiller PE" $true "multpl.com"
 } catch {
-  # multpl.com did not answer: keep the last good reading (with its own date) so the Bubble Watch tile does not vanish (23-24 Nov 2026)
-  if ($prev -and $prev.shiller) { $shiller = $prev.shiller; Add-Status "Shiller PE" $false ("kept the reading from " + $prev.shiller.asOf + ": " + $_.Exception.Message) $true }
-  else { Add-Status "Shiller PE" $false $_.Exception.Message }
+  $why = $_.Exception.Message
+  # Second source (24 Nov 2026, the owner: another source is fine): Robert Shiller's own data file from shillerdata.com, a monthly figure.
+  # It is an Excel file, so this runs where Excel is installed. Elsewhere the last good reading is kept.
+  $xl = $null
+  try {
+    $pg = Get-Web "https://shillerdata.com/"
+    $lk = [regex]::Match($pg, '//img1\.wsimg\.com/[^"'' \\]+ie_data\.xls[^"'' \\]*')
+    if (-not $lk.Success) { throw "no data file link on shillerdata.com" }
+    New-Item -ItemType Directory -Force (Join-Path $Out "cache") | Out-Null
+    $xf = Join-Path (Join-Path $Out "cache") "shiller-ie_data.xls"
+    Invoke-WebRequest -UseBasicParsing ("https:" + $lk.Value) -OutFile $xf -TimeoutSec 60
+    $xl = New-Object -ComObject Excel.Application; $xl.Visible = $false; $xl.DisplayAlerts = $false
+    $wb = $xl.Workbooks.Open($xf, 0, $true); $ws = $wb.Worksheets.Item("Data")
+    $lastRow = $ws.Cells.Item($ws.Rows.Count, 1).End(-4162).Row
+    $dv = $ws.Range("A9:A$lastRow").Value2; $cv = $ws.Range("M9:M$lastRow").Value2
+    $vals = New-Object System.Collections.Generic.List[double]; $lastVal = $null; $lastDate = $null
+    for ($i = 1; $i -le ($lastRow - 8); $i++) { if ($cv[$i, 1] -is [double] -and $dv[$i, 1] -is [double]) { $lastVal = $cv[($i), 1]; $vals.Add($lastVal); $lastDate = $dv[($i), 1] } }
+    $wb.Close($false)
+    if ($vals.Count -lt 1000 -or $lastVal -lt 5 -or $lastVal -gt 80) { throw "Shiller file did not read as expected" }
+    $month = "{0:0000}-{1:00}" -f [int][math]::Floor($lastDate), [int][math]::Round(($lastDate - [math]::Floor($lastDate)) * 100)
+    if (($now - [datetime]($month + "-01")).TotalDays -gt 75) { throw "Shiller file ends $month, too old" }
+    $sorted = @($vals | Sort-Object)
+    $shiller = [ordered]@{ asOf = $now.ToString("yyyy-MM-dd"); value = [math]::Round($lastVal, 2); mean = [math]::Round(($vals | Measure-Object -Average).Average, 2); median = [math]::Round($sorted[[int]($sorted.Count / 2)], 2); source = "shillerdata.com, monthly figure for $month" }
+    Add-Reading $shiller.asOf "Shiller PE" $shiller.value "shillerdata.com"
+    Add-Status "Shiller PE" $true ("shillerdata.com monthly figure for $month, because multpl.com did not answer")
+  } catch {
+    $why2 = $_.Exception.Message
+    # neither source answered: keep the last good reading (with its own date) so the Bubble Watch tile does not vanish
+    if ($prev -and $prev.shiller) { $shiller = $prev.shiller; Add-Status "Shiller PE" $false ("kept the reading from " + $prev.shiller.asOf + ": multpl.com: " + $why + " ; second source: " + $why2) $true }
+    else { Add-Status "Shiller PE" $false $why }
+  } finally { if ($xl) { try { $xl.Quit() } catch {}; [void][Runtime.InteropServices.Marshal]::ReleaseComObject($xl) } }
 }
-
 # ---------- BLS: jobs and prices, last 36 months ----------
 $blsSeries = @(
   @("payrolls", "Nonfarm payrolls (thousands)", "CES0000000001"),
@@ -222,6 +249,11 @@ $blsSeries = @(
   @("cpi", "CPI-U, all items, seasonally adjusted (index)", "CUSR0000SA0")
 )
 $bls = New-Object System.Collections.Generic.List[object]
+# BLS is asked once a day, after the 7:30 AM Central releases (the owner, 24 Nov 2026). Other runs keep what is saved.
+$today1 = $now.ToString("yyyy-MM-dd")
+$blsSkip = ($prev -and $prev.bls -and (($prev.blsDay -eq $today1) -or ($now.TimeOfDay -lt [TimeSpan]"07:35")))
+$blsDay = if ($blsSkip) { $prev.blsDay } else { $today1 }
+if ($blsSkip) { foreach ($s in $blsSeries) { $old = @($prev.bls | Where-Object { $_.id -eq $s[0] }) | Select-Object -First 1; if ($old) { $bls.Add($old); Add-Status $s[1] $true "saved data; BLS is asked once a day after 7:35 AM Central" } }; $blsSeries = @() }
 foreach ($s in $blsSeries) {
   try {
     $r = Invoke-RestMethod ("https://api.bls.gov/publicAPI/v2/timeseries/data/" + $s[2] + "?startyear=" + ($now.Year - 6) + "&endyear=" + $now.Year) -TimeoutSec 40
@@ -265,6 +297,7 @@ $data.Add("tiles", [object[]]$tiles.ToArray())
 $data.Add("spread", $spread)
 $data.Add("shiller", $shiller)
 $data.Add("bls", [object[]]$bls.ToArray())
+$data.Add("blsDay", $blsDay)
 $data.Add("status", [object[]]$status.ToArray())
 $json = $data | ConvertTo-Json -Depth 8 -Compress
 Set-Content -Path (Join-Path $Out "data.js") -Value ("window.DATA = " + $json + ";") -Encoding UTF8
