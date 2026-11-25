@@ -93,6 +93,9 @@ if (-not $bench) {
     if ($bv.Count -gt 1000) { $bench = [ordered]@{ equity = [math]::Round((($bv | Measure-Object -Average).Average), 2); days = $bv.Count; period = "Nov 2006 to Oct 2019" } }
   } catch { $note += "Cboe benchmark failed" }
 }
+# a source that quietly stops answering must show as a failure (24 Nov 2026)
+if ($aaii.Count -and ([int]((Get-Date).Date - [datetime]$aaii[-1].d).TotalDays -gt 11)) { "SENTIMENT: FAILED AAII latest week $($aaii[-1].d) is more than 11 days old" }
+if ($cboe.Count -and ([int]((Get-Date).Date - [datetime]$cboe[-1].d).TotalDays -gt 5)) { "SENTIMENT: FAILED Cboe latest day $($cboe[-1].d) is more than 5 days old" }
 # ---------- Write sentiment.js only when something changed ----------
 $obj = [ordered]@{ aaii = [object[]]$aaii; cboe = [object[]]$cboe; seen = [object[]]@($seen.Keys | Sort-Object); benchmark = $bench }
 $text = "window.SENTIMENT = " + ($obj | ConvertTo-Json -Depth 5 -Compress) + ";"

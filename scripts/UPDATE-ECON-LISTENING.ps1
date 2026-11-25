@@ -72,3 +72,4 @@ if ($final.Count -gt 0) {
   [IO.File]::WriteAllText((Join-Path $Out "listening.js"), "window.LISTEN = " + $json + ";", (New-Object Text.UTF8Encoding($false)))
 }
 "UPDATE-ECON-LISTENING.ps1: Done. Shows found now: $($items.Count) of $($shows.Count). Rows kept on the page: $($final.Count). Failed: $failed."
+if ($failed -gt 0) { "UPDATE-ECON-LISTENING.ps1: FAILED to read $failed of $($shows.Count) shows" }

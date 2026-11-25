@@ -34,3 +34,5 @@ try {
   [IO.File]::WriteAllText((Join-Path $Out "crude.js"), "window.CRUDE = " + $json + ";", (New-Object Text.UTF8Encoding($false)))
   "UPDATE-ECON-CRUDE.ps1: Done. Weeks: $($sorted.Count), latest $($sorted[-1].d) $($sorted[-1].v) million barrels."
 } catch { "UPDATE-ECON-CRUDE.ps1: FAILED: " + $_.Exception.Message }
+# the EIA publishes a new week every Wednesday for the week ending the Friday before: 13 days or more behind means a release was missed (24 Nov 2026)
+try { $cj = ((Get-Content (Join-Path $Out "crude.js") -Raw) -replace '^window\.CRUDE = ', '' -replace ';\s*$', '') | ConvertFrom-Json; $age = [int]((Get-Date).Date - [datetime]$cj.weeks[-1].d).TotalDays; if ($age -gt 13) { "UPDATE-ECON-CRUDE.ps1: FAILED latest week $($cj.weeks[-1].d) is $age days old" } } catch { "UPDATE-ECON-CRUDE.ps1: FAILED cannot read crude.js: " + $_.Exception.Message }

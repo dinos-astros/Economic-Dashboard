@@ -44,6 +44,9 @@ function Get-Yahoo([string]$sym) {
   $j = (Get-Web $u) | ConvertFrom-Json
   $r = $j.chart.result[0]
   $ts = @($r.timestamp); $cl = @($r.indicators.quote[0].close)
+  # Yahoo can leave the latest daily close empty after the session ends (24 Nov 2026): the session price is then in meta.regularMarketPrice
+  $n1 = $ts.Count - 1
+  if ($n1 -ge 0 -and $null -eq $cl[$n1] -and $r.meta.regularMarketPrice -and ([DateTimeOffset]::FromUnixTimeSeconds([int64]$r.meta.regularMarketTime).ToLocalTime().Date -eq [DateTimeOffset]::FromUnixTimeSeconds([int64]$ts[$n1]).ToLocalTime().Date) -and ((Get-Date).Hour -ge 16)) { $cl[$n1] = [double]$r.meta.regularMarketPrice }
   $pts = New-Object System.Collections.Generic.List[object]
   for ($i = 0; $i -lt $ts.Count; $i++) {
     if ($null -ne $cl[$i]) {

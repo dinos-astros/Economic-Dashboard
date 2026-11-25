@@ -53,7 +53,7 @@ try {
     $result[$sym] = [ordered]@{ open = [math]::Round($opens[-1], 2); d = $d; o = $o; h = $hh; l = $ll; c = $c; v = $v; m20 = $m20; m50 = $m50; m200 = $m200 }
     if (-not $asOf -or $dates[-1] -lt $asOf) { $asOf = $dates[-1] }
   }
-} catch { Add-Content (Join-Path $Out "update-log.txt") ("{0}  MARKET: FAILED {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $_.Exception.Message); exit }
+} catch { Add-Content (Join-Path $Out "update-log.txt") ("{0}  MARKET: FAILED {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $_.Exception.Message); "UPDATE-ECON-MARKET.ps1: FAILED " + $_.Exception.Message; exit }
 
 $obj = [ordered]@{ asOf = $asOf; SPY = $result['SPY']; QQQ = $result['QQQ'] }
 $text = "window.MARKET = " + ($obj | ConvertTo-Json -Depth 5 -Compress) + ";"

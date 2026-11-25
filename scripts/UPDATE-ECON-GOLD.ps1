@@ -192,18 +192,28 @@ try {
       }
       throw $lastErr
     }
-    $gw = Yahoo "GC=F" "1y" "1wk" $false
-    $dts = @($gw.timestamp | ForEach-Object { [DateTimeOffset]::FromUnixTimeSeconds($_).ToString("yyyy-MM-dd") })
-    $gc = @($gw.indicators.quote[0].close)
+    # Weekly closes are matched by calendar week, not by position (24 Nov 2026): before the open Yahoo can give gold one more row than a fund, and it adds a part week row for today.
+    # The last close seen in a week is that week's close; only weeks that gold and all ten funds have are drawn.
+    function WeekMap($res, $name) {
+      $m = [ordered]@{}; $ts = @($res.timestamp); $cl = @($res.indicators.quote[0].close)
+      for ($k = 0; $k -lt $ts.Count; $k++) {
+        if ($null -eq $cl[$k]) { continue }
+        $dd = [DateTimeOffset]::FromUnixTimeSeconds([long]$ts[$k] + [int]$res.meta.gmtoffset).UtcDateTime.Date
+        while ($dd.DayOfWeek -ne 'Monday') { $dd = $dd.AddDays(-1) }
+        $m[$dd.ToString("yyyy-MM-dd")] = [double]$cl[$k]
+      }
+      if ($m.Count -lt 40) { throw "$name weekly series too short ($($m.Count))" }
+      return $m
+    }
+    $maps = [ordered]@{ 'GC=F' = (WeekMap (Yahoo "GC=F" "1y" "1wk" $false) "gold futures") }
+    foreach ($s in $syms) { $maps[$s] = WeekMap (Yahoo $s "1y" "1wk" $false) $s }
+    $dts = @($maps['GC=F'].Keys | Where-Object { $wk = $_; @($maps.Values | Where-Object { -not $_.Contains($wk) }).Count -eq 0 })
     $n = $dts.Count
-    if ($n -lt 40) { throw "gold futures weekly series too short ($n)" }
-    if (@($gc | Where-Object { $null -eq $_ }).Count -gt 0) { throw "gold futures series has gaps" }
+    if ($n -lt 40) { throw "only $n weeks are shared by gold and every fund" }
+    $gc = @($dts | ForEach-Object { $maps['GC=F'][$_] })
     $etfLines = @(); $r3Lines = @(); $dvLines = @()
     foreach ($s in $syms) {
-      $w = Yahoo $s "1y" "1wk" $false
-      $c = @($w.indicators.quote[0].close)
-      if ($c.Count -ne $n) { throw "$s weekly count $($c.Count) does not match gold $n" }
-      if (@($c | Where-Object { $null -eq $_ }).Count -gt 0) { throw "$s weekly series has gaps" }
+      $c = @($dts | ForEach-Object { $maps[$s][$_] })
       $etfLines += "  ${s}: [" + (($c | ForEach-Object { N $_ 2 }) -join ",") + "]"
       $d3 = Yahoo $s "3y" "1d" $false
       $c3 = @($d3.indicators.quote[0].close); $t3 = @($d3.timestamp)
@@ -221,7 +231,7 @@ try {
     Write-Output "gold ETFs: refreshed 10 funds, $n weeks"; $etfOk = $true
   }
 } catch {
-  $yerr = $_.Exception.Message; Write-Output "gold ETFs: Yahoo failed ($yerr), trying the Nasdaq backup"
+  $yerr = $_.Exception.Message; Write-Output "gold ETFs: FAILED on Yahoo ($yerr), using the Nasdaq backup"
   try { Nasdaq-Backup; $etfOk = $true } catch { Write-Output ("gold ETFs FAILED on both sources, the old file stays: " + $_.Exception.Message); $problems += ("ETF data: Yahoo said ' $yerr ' and Nasdaq said ' " + $_.Exception.Message + " '") }
 }
 

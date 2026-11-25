@@ -7,7 +7,7 @@
 $Out  = "$env:ECON_OUT"
 $path = Join-Path $Out "data.js"
 $log  = Join-Path $Out "update-log.txt"
-function Log($t) { Add-Content -Path $log -Value ("{0}  VIX: {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $t) }
+function Log($t) { Add-Content -Path $log -Value ("{0}  VIX: {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $t); if ($t -cmatch 'FAILED') { Write-Output "UPDATE-ECON-VIX.ps1: $t" } }   # failures are also printed, so the cloud status shows CHECK
 $inv = [Globalization.CultureInfo]::InvariantCulture
 
 try {
@@ -16,13 +16,13 @@ try {
   $m  = ($r.Content | ConvertFrom-Json).chart.result[0].meta
   $price = [math]::Round([double]$m.regularMarketPrice, 2)
   $prev  = [math]::Round([double]$m.chartPreviousClose, 2)
-  if ($price -le 0 -or $prev -le 0) { Log "quote looked wrong, skipped"; exit }
+  if ($price -le 0 -or $prev -le 0) { Log "FAILED quote looked wrong, skipped"; exit }
   $dt    = [DateTimeOffset]::FromUnixTimeSeconds([int64]$m.regularMarketTime).LocalDateTime
   $asOf  = $dt.ToString("yyyy-MM-dd")
   $clock = $dt.ToString("h:mm tt", $inv)
 
   $text = [IO.File]::ReadAllText($path)
-  $s = $text.IndexOf('{"id":"vix"'); if ($s -lt 0) { Log "no VIX tile in data.js"; exit }
+  $s = $text.IndexOf('{"id":"vix"'); if ($s -lt 0) { Log "FAILED no VIX tile in data.js"; exit }
   $e = $text.IndexOf('{"id":"', $s + 5); if ($e -lt 0) { $e = $text.Length }
   $seg = $text.Substring($s, $e - $s)
   $new = $seg
