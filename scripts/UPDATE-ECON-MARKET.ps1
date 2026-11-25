@@ -23,6 +23,12 @@ try {
     $q = $res.indicators.quote[0]
     for ($i = 0; $i -lt $res.timestamp.Count; $i++) {
       $cl = $q.close[$i]
+      # Yahoo can leave today's daily close empty for hours after the bell (24 Nov 2026). The session close is then in meta.regularMarketPrice.
+      if ($null -eq $cl -and $i -eq $res.timestamp.Count - 1 -and $null -ne $q.open[$i] -and $res.meta.regularMarketPrice) {
+        $mt = [DateTimeOffset]::FromUnixTimeSeconds([long]$res.meta.regularMarketTime + $off).UtcDateTime
+        $bd = [DateTimeOffset]::FromUnixTimeSeconds([long]$res.timestamp[$i] + $off).UtcDateTime
+        if ($mt.Date -eq $bd.Date -and $mt.TimeOfDay -ge [TimeSpan]::FromHours(16)) { $cl = [double]$res.meta.regularMarketPrice }
+      }
       if ($null -eq $cl) { continue }
       $dates += ([DateTimeOffset]::FromUnixTimeSeconds([long]$res.timestamp[$i] + $off).UtcDateTime.ToString("yyyy-MM-dd"))
       $closes += [double]$cl
@@ -41,6 +47,9 @@ try {
       $d += $dates[$i]; $o += [math]::Round($opens[$i], 2); $hh += [math]::Round($highs[$i], 2); $ll += [math]::Round($lows[$i], 2); $c += [math]::Round($closes[$i], 2); $v += [long]$vols[$i]
       $m20 += (MA $closes 20 $i); $m50 += (MA $closes 50 $i); $m200 += (MA $closes 200 $i)
     }
+    # a finished session that is still missing from the chart must show up as a failure, not pass silently
+    $lastTrade = [DateTimeOffset]::FromUnixTimeSeconds([long]$res.meta.regularMarketTime + $off).UtcDateTime
+    if ($lastTrade.ToString("yyyy-MM-dd") -gt $dates[-1] -and ($lastTrade.Date -lt $nowET.Date -or $nowET.TimeOfDay -ge [TimeSpan]::FromMinutes(16 * 60 + 10))) { "UPDATE-ECON-MARKET.ps1: FAILED $sym session $($lastTrade.ToString('yyyy-MM-dd')) is finished but the chart ends $($dates[-1])" }
     $result[$sym] = [ordered]@{ open = [math]::Round($opens[-1], 2); d = $d; o = $o; h = $hh; l = $ll; c = $c; v = $v; m20 = $m20; m50 = $m50; m200 = $m200 }
     if (-not $asOf -or $dates[-1] -lt $asOf) { $asOf = $dates[-1] }
   }
