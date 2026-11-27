@@ -1,5 +1,5 @@
 ﻿UPDATE-ECON-DASHBOARD.ps1: CHECK
-    FAILED: Shiller PE :: kept the reading from 2026-11-25: multpl.com: Unable to connect to the remote server ; second source: Retrieving the COM class factory for component with CLSID {00000000-0000-000
+    FAILED: Shiller PE :: kept the reading from 2026-11-27: multpl.com: Unable to connect to the remote server ; second source: Retrieving the COM class factory for component with CLSID {00000000-0000-000
 UPDATE-ECON-VIX.ps1: ok
 UPDATE-ECON-MARKET.ps1: ok
 UPDATE-ECON-SENTIMENT.ps1: ok
