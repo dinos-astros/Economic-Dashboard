@@ -1129,6 +1129,37 @@
     var grid = hh && hh.nextElementSibling;
     if (grid) grid.querySelectorAll('.tile > .label').forEach(function (l) { if (!l.querySelector('a')) wrap(l, HAR); });
   })();
+  /* The open page checks for new data on its own (Jill, 27 Nov 2026): every 5 minutes, and when she comes back to the tab. It reloads only when a data file has changed, and keeps her place. No tokens: it all runs in the browser. */
+  (function () {
+    if (location.protocol === 'file:') return;   /* a page opened from a file cannot read its data files this way */
+    var FILES = ['data.js', 'market.js', 'monthly.js', 'sentiment.js', 'crude.js', 'index.js', 'releases.js', 'houston-housing.js', 'elections.js', 'history.js'], base = {}, busy = false, KEEP = 'dashKeep';
+    try {
+      var k = JSON.parse(sessionStorage.getItem(KEEP) || 'null');
+      if (k) { var d = document.querySelectorAll('details'); (k.open || []).forEach(function (i) { if (d[i]) d[i].open = true; }); window.scrollTo(0, k.y); setTimeout(function () { window.scrollTo(0, k.y); sessionStorage.removeItem(KEEP); }, 1200); }
+    } catch (e) {}
+    var read = function (f, how) { return fetch(f, { cache: how }).then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; }); };
+    function check() {
+      if (busy || document.hidden) return Promise.resolve(false);
+      busy = true;
+      return Promise.all(FILES.map(function (f) { return read(f, 'no-cache'); })).then(function (now) {
+        busy = false;
+        var changed = FILES.some(function (f, i) { return now[i] !== null && base[f] !== undefined && base[f] !== null && now[i] !== base[f]; });
+        if (!changed) return false;
+        var last = 0; try { last = +sessionStorage.getItem('dashReload') || 0; } catch (e) {}
+        if (Date.now() - last < 240000) return false;   /* never reload more than once in 4 minutes */
+        try {
+          var open = []; document.querySelectorAll('details').forEach(function (d, i) { if (d.open) open.push(i); });
+          sessionStorage.setItem(KEEP, JSON.stringify({ y: window.scrollY, open: open })); sessionStorage.setItem('dashReload', String(Date.now()));
+        } catch (e) {}
+        location.reload(); return true;
+      });
+    }
+    window.checkForNewData = check;
+    /* the starting point is what the page was drawn from (the browser's copy); the first check right after compares it with the website */
+    Promise.all(FILES.map(function (f) { return read(f, 'force-cache'); })).then(function (first) { FILES.forEach(function (f, i) { base[f] = first[i]; }); setTimeout(check, 4000); });
+    setInterval(check, 300000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+  })();
   /* the listening links are re-read every 3 minutes, so a new episode appears without refreshing the page */
   setInterval(function () {
     var s = document.createElement('script'); s.src = 'listening.js?t=' + Date.now();
