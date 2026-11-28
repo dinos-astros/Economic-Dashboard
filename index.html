@@ -677,7 +677,9 @@
         var mo = +m.d[i].slice(5, 7);
         out += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" font-size="13" fill="' + INK + '" text-anchor="middle">' + dayLabel(m.d[i]) + ((firstLabel || (mo === 1 && +m.d[i].slice(8, 10) <= 7)) ? ', ' + m.d[i].slice(0, 4) : '') + '</text>'; firstLabel = false;
       }
-      out += '<text transform="rotate(90 ' + (W - 6) + ' ' + (T + PH / 2) + ')" x="' + (W - 6) + '" y="' + (T + PH / 2) + '" font-size="12" fill="#000" text-anchor="middle">Price (dollars)</text></svg>';
+      out += '<text transform="rotate(90 ' + (W - 6) + ' ' + (T + PH / 2) + ')" x="' + (W - 6) + '" y="' + (T + PH / 2) + '" font-size="12" fill="#000" text-anchor="middle">Price (dollars)</text>';
+      /* hover area over the candles and the volume bars (the script at the foot of the page reads it) */
+      out += '<rect class="mkov" data-s="' + s + '" data-g="' + [W, L, pw, T, VT + VH, PH, n, hi, lo].join(',') + '" x="' + L + '" y="' + T + '" width="' + pw + '" height="' + (VT + VH - T) + '" fill="transparent"/></svg>';
       return '<div class="card"><h3 style="display:flex;flex-wrap:wrap;gap:4px 34px;align-items:baseline"><span class="ttl">' + s + '</span><span style="color:#000">Market: <span style="color:' + (COLS[mWord] || INK) + '">' + mWord + '</span></span><span style="color:#000">Trend: <span style="color:' + (COLS[tWord] || INK) + '">' + (tWord === 'Trending up' ? 'Up' : 'Down') + '</span></span>' + (ddOf(s) <= -10 ? '<span style="color:#000">Correction: <span style="color:#c0392b">' + pct1(ddOf(s)) + '</span> from ' + hiShort(s) + ' Peak</span>' : (ddOf(s) <= -5 ? '<span style="color:#000">Pullback: <span style="color:#c26a0a">' + pct1(ddOf(s)) + '</span> from ' + hiShort(s) + ' Peak</span>' : '')) + (dayOf(s) <= -4 ? '<span style="color:#000">Sell off: <span style="color:#c0392b">' + pct2(dayOf(s)) + '</span></span>' : '') + '</h3>' + out + legend([['#d9822b', '20 MA', 'line'], ['#1a3a7a', '50 MA', 'line'], ['#7b3fa0', '200 MA', 'line'], ['#c0399a', 'Highs trendline', 'dash'], ['#0f8aa8', 'Lows trendline', 'dash']]) + '</div>';
     };
     /* the call, from Jill's rules only, over the 30 days shown: sloping up = the MA line trends up over the 30 days, sloping down = trends down (the best-fit straight line through the 30 points; "over time it is moving up", her word); flat = within 2% either way; "most of the time" above the 50 MA = 70% of the 30 days (21 of 30). Both SPY and QQQ must meet a rule. */
@@ -1214,6 +1216,32 @@
     texts.forEach(function (t, k) { t.setAttribute('x', bx + 7); t.setAttribute('y', by + 15 + k * 15); });
   }
   document.addEventListener('pointermove', mvL); document.addEventListener('pointerdown', mvL);
+})();
+</script>
+<script>
+/* hover on the Daily Market Check: shows the date, the open, high, low, close, volume and moving averages of the day under the pointer (Jill, 27 Nov 2026) */
+(function () {
+  var NS = 'http://www.w3.org/2000/svg', MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function el(n, a) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); return e; }
+  function hide() { document.querySelectorAll('.mkh').forEach(function (g) { g.style.display = 'none'; }); }
+  function move(ev) {
+    var o = ev.target; hide(); if (!o.classList || !o.classList.contains('mkov') || !window.MARKET) return;
+    var sv = o.ownerSVGElement, b = sv.getBoundingClientRect(), g = o.getAttribute('data-g').split(',').map(Number), W = g[0], L = g[1], pw = g[2], T = g[3], bottom = g[4], PH = g[5], n = g[6], hi = g[7], lo = g[8];
+    var m = MARKET[o.getAttribute('data-s')], x = (ev.clientX - b.left) * W / b.width, i = Math.max(0, Math.min(n - 1, Math.floor((x - L) / pw * n))), j = m.c.length - n + i, X = L + (i + 0.5) / n * pw;
+    var grp = sv.querySelector('.mkh'); if (grp) sv.removeChild(grp);
+    grp = el('g', { 'class': 'mkh', 'pointer-events': 'none' }); sv.appendChild(grp);
+    grp.appendChild(el('line', { x1: X, x2: X, y1: T, y2: bottom, stroke: '#898781', 'stroke-dasharray': '3 3' }));
+    [['m20', '#d9822b'], ['m50', '#1a3a7a'], ['m200', '#7b3fa0']].forEach(function (a) { grp.appendChild(el('circle', { cx: X, cy: T + (hi - m[a[0]][j]) / (hi - lo) * PH, r: 4, fill: a[1], stroke: '#fff', 'stroke-width': 1.5 })); });
+    var p = m.d[j].split('-'), two = function (v) { return v.toFixed(2); };
+    var rows = [MON[+p[1] - 1] + ' ' + (+p[2]) + ' ' + p[0], 'Open ' + two(m.o[j]), 'High ' + two(m.h[j]), 'Low ' + two(m.l[j]), 'Close ' + two(m.c[j]), 'Volume ' + (m.v[j] / 1e6).toFixed(1) + ' million shares', '20 MA ' + two(m.m20[j]), '50 MA ' + two(m.m50[j]), '200 MA ' + two(m.m200[j])];
+    var box = el('rect', { rx: 4, fill: '#fff', stroke: '#898781' }); grp.appendChild(box);
+    var texts = rows.map(function (t, k) { var e = el('text', { 'font-size': 12, fill: '#000', 'font-weight': k ? 400 : 700 }); e.textContent = t; grp.appendChild(e); return e; });
+    var w = Math.max.apply(null, texts.map(function (t) { return t.getComputedTextLength(); })) + 14, h = rows.length * 15 + 8, bx = X + 10; if (bx + w > W - 4) bx = X - 10 - w;
+    box.setAttribute('x', bx); box.setAttribute('y', T + 2); box.setAttribute('width', w); box.setAttribute('height', h);
+    texts.forEach(function (t, k) { t.setAttribute('x', bx + 7); t.setAttribute('y', T + 17 + k * 15); });
+  }
+  document.addEventListener('pointermove', move); document.addEventListener('pointerdown', move);
+  document.documentElement.addEventListener('pointerleave', hide);
 })();
 </script>
 </body>
